@@ -126,7 +126,14 @@ void http_consumer::consume( tcp_stream *client ) {
   }
  
   route( request, response );
-  
+
+  log( INFO, "%s -> %s %s [status=%d body=%d bytes]", 
+       client->peer_address().c_str(), 
+       request.method_name().c_str(),
+       request.path.c_str(),
+       response.status,
+       response.body.size() );
+
   res_buffer = response.str();
   int sent = client->send( (unsigned char *)res_buffer.c_str(), res_buffer.size() );
   if( sent != res_buffer.size() ){
