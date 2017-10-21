@@ -21,6 +21,7 @@
 #include "mutex.h"
 #include <pthread.h>
 #include <list>
+#include <stdio.h>
  
 using namespace std;
  
@@ -33,21 +34,22 @@ class work_queue
 
     list<T>    _queue;
     mutex      _mutex;
-    condition  _cond;
+    condition  _avail;
 
   public:
 
     void add(T item) {
       scoped_mutex sm(&_mutex);
+
       _queue.push_back(item);
-      _cond.signal();
+      _avail.signal();
     }
 
     T remove() {
       scoped_mutex sm(&_mutex);
 
       while( _queue.size() == 0 ) {
-        _cond.wait(_mutex);
+        _avail.wait(_mutex);
       }
 
       T item = _queue.front();
@@ -58,6 +60,7 @@ class work_queue
 
     int size() {
       scoped_mutex sm(&_mutex);
+
       int size = _queue.size();
       return size;
     }
