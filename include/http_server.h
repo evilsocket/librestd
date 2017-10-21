@@ -67,9 +67,9 @@ class http_server
 {
   private:
 
-   string                    _address;
-   unsigned short            _port;
-   tcp_server               *_server;
+   string                   _address;
+   unsigned short           _port;
+   tcp_server              *_server;
    unsigned int             _threads;
    work_queue<tcp_stream *> _queue;
    list<http_consumer *>    _consumers;
@@ -85,4 +85,6 @@ class http_server
    void start();
 };
 
+#define RESTD_ROUTE( SERVER, METHOD, PATH, CONTROLLER, HANDLER ) \
+  (SERVER).route( (PATH), &(CONTROLLER), (restd::http_controller::handler_t)&HANDLER, (METHOD) )
 }

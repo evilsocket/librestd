@@ -20,9 +20,9 @@
 #include <thread>
 #include <sstream>
 
-#include "restd.h"
+#include <restd.h>
 
-class hello_world_controller : public restd::http_controller {
+class hello_world : public restd::http_controller {
   public:
 
    // GET /
@@ -99,15 +99,13 @@ void usage(char *argvz) {
 int main(int argc, char **argv)
 {
   std::string address        = "127.0.0.1";
-  int port                   = 8080;
+  unsigned short port        = 8080;
   restd::log_level_t llevel  = restd::INFO;
 
   int c;
 
-  while( (c = getopt(argc, argv, "a:p:Dh")) != -1)
-  {
-    switch(c)
-    {
+  while( (c = getopt(argc, argv, "a:p:Dh")) != -1) {
+    switch(c) {
       case 'a': address = optarg; break;
       case 'p': port    = atoi(optarg); break;
       case 'D': llevel  = restd::DEBUG; break;
@@ -119,8 +117,6 @@ int main(int argc, char **argv)
   }
 
   try {
-    hello_world_controller hw;
-
     restd::set_log_level( llevel );
     restd::set_log_fp( stdout );
     restd::set_log_dateformat( "%c" );
@@ -129,10 +125,12 @@ int main(int argc, char **argv)
 
     restd::http_server server( address.c_str(), port, std::thread::hardware_concurrency() );
     
-    server.route( "/",      &hw, (restd::http_controller::handler_t)&hello_world_controller::index, restd::GET );
-    server.route( "/debug", &hw, (restd::http_controller::handler_t)&hello_world_controller::debug, restd::ANY );
-    server.route( "/hello", &hw, (restd::http_controller::handler_t)&hello_world_controller::hello, restd::GET );
+    hello_world hw;
 
+    RESTD_ROUTE( server, restd::GET, "/",      hw, hello_world::index );
+    RESTD_ROUTE( server, restd::ANY, "/debug", hw, hello_world::debug );
+    RESTD_ROUTE( server, restd::GET, "/hello", hw, hello_world::hello );
+    
     server.start();
   }
   catch( const exception& e ) {
