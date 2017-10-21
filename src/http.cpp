@@ -24,12 +24,15 @@
 
 namespace restd {
 
+#define HTTP_SERVER_SOFTWARE   "librestd-1.0"
 #define HTTP_END_OF_HEADERS    "\r\n\r\n"
 #define HTTP_END_OF_HEADERS_SZ 4
 
 // METHOD /URI HTTP/VERSION
 static const std::regex FIRST_LINE_PARSER("([^\\s]+)\\s+([^\\s]+)\\s+HTTP.([\\d\\.]+)");  
+// /PATH?QUERY
 static const std::regex PATH_QUERY_PARSER( "(/[^?]*)\\?(.+)" );
+// KEY: VALUE
 static const std::regex HEADER_PARSER("([^\\s]+)\\s*:\\s*(.+)");  
 
 char *rtrim( char *p ){
@@ -331,7 +334,7 @@ std::string http_response::str() {
   }
 
   if( headers.find("Server") == headers.end() ){
-    ss << "Server: librestd\r\n";
+    ss << "Server: " << HTTP_SERVER_SOFTWARE << "\r\n";
   }
 
   if( headers.find("Content-Length") == headers.end() && !body.empty() ){
