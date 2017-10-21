@@ -30,7 +30,10 @@ void rtrim(std::string &s);
 void ltrim(std::string &s);
 void trim(std::string &s);
 
+void replace(std::string& subject, const std::string& search, const std::string& replace);
+
 std::string urldecode( const char *src );
+
 
 template <char SEP>
 class char_iterator {

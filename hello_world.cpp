@@ -34,6 +34,7 @@ class hello_world : public restd::http_controller {
 
       ss << "<a href='/hello'>Hello Route</a><br>";
       ss << "<a href='/json'>JSON Route</a><br>";
+      ss << "<a href='/named/e4d909c290d0fb1ca068ffaddf22cbd0/i_can_be_empty'>Named Parameters Route</a><br>";
       ss << "<a href='/form'>Form Route</a><br>";
       ss << "<a href='/debug'>Debug Route</a><br>";
 
@@ -184,6 +185,7 @@ int main(int argc, char **argv)
     RESTD_ROUTE( server, restd::GET, "/json",  hw, hello_world::json );
     RESTD_ROUTE( server, restd::GET, "/form",  hw, hello_world::form );
     RESTD_ROUTE( server, restd::ANY, "/debug", hw, hello_world::debug );
+    RESTD_ROUTE( server, restd::GET, "/named/:hash([a-f0-9]{32})/?:optional(.*)", hw, hello_world::debug );
     
     server.start();
   }

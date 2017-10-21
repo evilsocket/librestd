@@ -23,6 +23,8 @@
 #include "tcp_server.h"
 #include "http.h"
 
+#include <regex>
+
 namespace restd {
 
 class http_controller 
@@ -33,6 +35,12 @@ class http_controller
 
 class http_route 
 {
+  private:
+
+    bool           is_re;
+    std::regex     re;
+    vector<string> names;
+
   public:
 
     Method               method;
@@ -42,7 +50,7 @@ class http_route
 
     http_route( string path, http_controller *controller, http_controller::handler_t handler, Method method = ANY );
 
-    bool matches( const http_request& req );
+    bool matches( http_request& req );
     void call( http_request& req, http_response& resp );
 };
 

@@ -24,20 +24,62 @@
 
 namespace restd {
 
+const static std::regex NAMED_PARAM_PARSER( ":([_a-z0-9]+)\\(([^\\)]*)\\)", std::regex_constants::icase );
+
 http_route::http_route( string path, http_controller *controller, http_controller::handler_t handler, Method method /* = ANY */ ) :
+  is_re(false),
   method(method),
   path(path),
   controller(controller),
   handler(handler){
 
+  string tmp(path);
+  std::smatch m;
+  while( std::regex_search( tmp, m, NAMED_PARAM_PARSER ) == true && m.size() == 3 ) {
+    is_re = true;
+
+    string tok  = m[0].str(),
+           name = m[1].str(),
+           expr = m[2].str();
+
+    strings::replace( this->path, tok, "(" + expr + ")" );
+
+    names.push_back(name);
+
+    log( DEBUG, "Found named parameter in '%s':", tmp.c_str() );
+    for( int i = 0; i < m.size(); ++i ) {
+      log( DEBUG, "  m[%d] = '%s'", i, m[i].str().c_str() );
+    }
+
+    tmp = m.suffix();
+  }
+
+  if(is_re) {
+    log( DEBUG, "Final path = '%s'", this->path.c_str() );
+    re = std::regex( this->path, std::regex_constants::icase );
+  }
 }
 
-bool http_route::matches( const http_request& req ) {
+bool http_route::matches( http_request& req ) {
   if( method != ANY && req.method != method ) {
     return false;
   }
 
-  return req.path == path;
+  if( is_re == false ) {
+    return req.path == path;
+  }
+
+  std::smatch m;
+  if( std::regex_search( req.path, m, re ) == true && m.size() == names.size() + 1 ) {
+    
+    for( int i = 1; i < m.size(); ++i ) {
+      req.parameters[ names[i - 1] ] = m[i].str();
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 void http_route::call( http_request& req, http_response& resp ) {
