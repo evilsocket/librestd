@@ -111,10 +111,12 @@ bool http_request::parseHeaders( http_request& req, strings::line_iterator& iter
     log( DEBUG, "  req.headers[%s] = '%s'", name.c_str(), value.c_str() );
 
     req.headers[name] = value;
+
     if( name == "Host" ){
       req.host = value;
       log( DEBUG, "    req.host = '%s'", value.c_str() );
-    } else if( name == "Cookie" ) {
+    }
+    else if( name == "Cookie" ) {
       if( parseCookies( req, value ) == false ) {
         // Maybe just log the error and continue?
         return false;
