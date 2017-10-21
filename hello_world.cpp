@@ -129,10 +129,9 @@ void usage(char *argvz) {
 
 int main(int argc, char **argv)
 {
-  std::string address        = "127.0.0.1";
-  unsigned short port        = 8080;
-  restd::log_level_t llevel  = restd::INFO;
-
+  std::string address       = "127.0.0.1";
+  unsigned short port       = 8080;
+  restd::log_level_t llevel = restd::INFO;
   int c;
 
   while( (c = getopt(argc, argv, "a:p:Dh")) != -1) {
