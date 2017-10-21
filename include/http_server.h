@@ -28,21 +28,22 @@ namespace restd {
 class http_controller 
 {
   public:
-    
-    virtual void handle( http_request& req, http_response& resp ) = 0;
+    typedef void (http_controller::*handler_t)( http_request& req, http_response& resp );
 };
 
 class http_route 
 {
   public:
 
-    Method           method;
-    string           path;
-    http_controller *controller;
+    Method               method;
+    string               path;
+    http_controller     *controller;
+    http_controller::handler_t handler;
 
-    http_route( string path, http_controller *controller, Method method = ANY );
+    http_route( string path, http_controller *controller, http_controller::handler_t handler, Method method = ANY );
 
     bool matches( const http_request& req );
+    void call( http_request& req, http_response& resp );
 };
 
 typedef list<http_route *> routes_t;
@@ -79,7 +80,7 @@ class http_server
    http_server( string address, unsigned short port, unsigned int threads );
    virtual ~http_server();
 
-   void route( string path, http_controller *controller, Method method = ANY );
+   void route( string path, http_controller *controller, http_controller::handler_t handler, Method method = ANY );
 
    void start();
 };

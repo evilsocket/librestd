@@ -24,10 +24,11 @@
 
 namespace restd {
 
-http_route::http_route( string path, http_controller *controller, Method method /* = ANY */ ) :
+http_route::http_route( string path, http_controller *controller, http_controller::handler_t handler, Method method /* = ANY */ ) :
   method(method),
   path(path),
-  controller(controller) {
+  controller(controller),
+  handler(handler){
 
 }
 
@@ -39,11 +40,17 @@ bool http_route::matches( const http_request& req ) {
   return req.path == path;
 }
 
+void http_route::call( http_request& req, http_response& resp ) {
+  (controller->*handler)( req, resp );
+}
+
 void http_consumer::route( http_request& request, http_response& response ) {
   for( auto i = _routes->begin(), e = _routes->end(); i != e; ++i ){
-    if( (*i)->matches( request ) ) {
-      log( DEBUG, "'%s %s' matched controller %s", request.method_name().c_str(), request.path.c_str(), typeid(*(*i)->controller).name() );
-      (*i)->controller->handle( request, response );
+    http_route *route = *i;
+
+    if( route->matches( request ) ) {
+      log( DEBUG, "'%s %s' matched controller %s", request.method_name().c_str(), request.path.c_str(), typeid(*route->controller).name() );
+      route->call( request, response );
       return;
     }
   }
@@ -119,9 +126,9 @@ http_server::~http_server() {
   _routes.clear();
 }
 
-void http_server::route( string path, http_controller *controller, Method method /* = ANY */ ) {
+void http_server::route( string path, http_controller *controller, http_controller::handler_t handler, Method method /* = ANY */ ) {
   log( DEBUG, "Registering controller %s for path '%s'", typeid(*controller).name(), path.c_str() );
-  _routes.push_back( new http_route( path, controller, method ) );
+  _routes.push_back( new http_route( path, controller, handler, method ) );
 }
 
 void http_server::start() {

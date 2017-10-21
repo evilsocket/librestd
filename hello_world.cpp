@@ -22,9 +22,23 @@
 
 #include "restd.h"
 
-class debug_controller : public restd::http_controller {
+class hello_world_controller : public restd::http_controller {
   public:
-    void handle( restd::http_request& req, restd::http_response& resp ) {
+
+   // GET /
+   void index( restd::http_request& req, restd::http_response& resp ) {
+      std::stringstream ss;
+
+      ss << "Welcome to the librestd Hello World, click on one of the following routes:<br><br>";
+
+      ss << "<a href='/hello'>Hello Route</a><br>";
+      ss << "<a href='/debug'>Debug Route</a><br>";
+
+      resp.html(ss.str());
+   }
+
+   // * /debug
+   void debug( restd::http_request& req, restd::http_response& resp ) {
       std::stringstream ss;
 
       #define KV_LINE(k,v) \
@@ -63,21 +77,19 @@ class debug_controller : public restd::http_controller {
 
       resp.html(ss.str());
     }
-};
 
-class hello_world_controller : public restd::http_controller {
-  public:
-    void handle( restd::http_request& req, restd::http_response& resp ) {
-      string output;
+   // GET /hello
+   void hello( restd::http_request& req, restd::http_response& resp ) {
+     string output;
 
-      if( req.has_parameter("name") ){
-        output = "Hello world " + req.param("name");
-      } else {
-        output = "Hello world stranger, use the 'name' parameter to specify your name.";
-      }
+     if( req.has_parameter("name") ){
+       output = "Hello world " + req.param("name");
+     } else {
+       output = "Hello world stranger, use the 'name' parameter to specify your name.";
+     }
 
-      resp.html(output);
-    }
+     resp.html(output);
+   }
 };
 
 void usage(char *argvz) {
@@ -108,7 +120,6 @@ int main(int argc, char **argv)
 
   try {
     hello_world_controller hw;
-    debug_controller dbg;
 
     restd::set_log_level( llevel );
     restd::set_log_fp( stdout );
@@ -118,8 +129,9 @@ int main(int argc, char **argv)
 
     restd::http_server server( address.c_str(), port, std::thread::hardware_concurrency() );
     
-    server.route( "/debug", &dbg, restd::ANY );
-    server.route( "/hello", &hw, restd::GET );
+    server.route( "/",      &hw, (restd::http_controller::handler_t)&hello_world_controller::index, restd::GET );
+    server.route( "/debug", &hw, (restd::http_controller::handler_t)&hello_world_controller::debug, restd::ANY );
+    server.route( "/hello", &hw, (restd::http_controller::handler_t)&hello_world_controller::hello, restd::GET );
 
     server.start();
   }
