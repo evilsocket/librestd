@@ -39,7 +39,6 @@ class debug_controller : public restd::http_controller {
           ss << "</table>"; \
         ss << "</td></tr>"
 
-
       ss << "<strong>THIS IS NOT XSS SAFE</strong><br><br>";
 
       ss << "<pre>" << req.raw << "</pre>";
@@ -84,11 +83,12 @@ class hello_world_controller : public restd::http_controller {
 void usage(char *argvz) {
   printf( "Usage: %s <-a address> <-p port> <-D>\n", argvz );
 }
+
 int main(int argc, char **argv)
 {
-  std::string address = "127.0.0.1";
-  restd::log_level_t llevel = restd::INFO;
-  int port = 8080;
+  std::string address        = "127.0.0.1";
+  int port                   = 8080;
+  restd::log_level_t llevel  = restd::INFO;
 
   int c;
 
@@ -118,8 +118,8 @@ int main(int argc, char **argv)
 
     restd::http_server server( address.c_str(), port, std::thread::hardware_concurrency() );
     
-    server.route( "/debug", &dbg );
-    server.route( "/hello", &hw );
+    server.route( "/debug", &dbg, restd::ANY );
+    server.route( "/hello", &hw, restd::GET );
 
     server.start();
   }

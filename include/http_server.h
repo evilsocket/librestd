@@ -32,12 +32,25 @@ class http_controller
     virtual void handle( http_request& req, http_response& resp ) = 0;
 };
 
-typedef map<string, http_controller *> routes_t;
+class http_route 
+{
+  public:
+
+    Method           method;
+    string           path;
+    http_controller *controller;
+
+    http_route( string path, http_controller *controller, Method method = ANY );
+
+    bool matches( const http_request& req );
+};
+
+typedef list<http_route *> routes_t;
 
 class http_consumer : public consumer<tcp_stream> {
   private:
 
-   routes_t *_routes;
+    routes_t *_routes;
 
     void route( http_request& request, http_response& response );
 
@@ -66,7 +79,7 @@ class http_server
    http_server( string address, unsigned short port, unsigned int threads );
    virtual ~http_server();
 
-   void route( string path, http_controller *controller );
+   void route( string path, http_controller *controller, Method method = ANY );
 
    void start();
 };

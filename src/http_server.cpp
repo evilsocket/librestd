@@ -24,22 +24,39 @@
 
 namespace restd {
 
+http_route::http_route( string path, http_controller *controller, Method method /* = ANY */ ) :
+  method(method),
+  path(path),
+  controller(controller) {
+
+}
+
+bool http_route::matches( const http_request& req ) {
+  if( method != ANY && req.method != method ) {
+    return false;
+  }
+
+  return req.path == path;
+}
+
 void http_consumer::route( http_request& request, http_response& response ) {
-  routes_t::iterator i = _routes->find( request.path );
-  if( i == _routes->end() ){
-    log( WARNING, "Unhandled route to %s", request.path.c_str() );
-    response.text( "Not Found", http_response::HTTP_STATUS_NOT_FOUND );
+  for( auto i = _routes->begin(), e = _routes->end(); i != e; ++i ){
+    if( (*i)->matches( request ) ) {
+      log( DEBUG, "'%s %s' matched controller %s", request.method_name().c_str(), request.path.c_str(), typeid(*(*i)->controller).name() );
+      (*i)->controller->handle( request, response );
+      return;
+    }
   }
-  else {
-    log( DEBUG, "Path '%s' matched controller %s", request.path.c_str(), typeid(*i->second).name() );
-    i->second->handle( request, response );
-  }
+
+  log( WARNING, "No route defined for '%s %s'", request.method_name().c_str(), request.path.c_str() );
+  
+  response.text( "Not Found", http_response::HTTP_STATUS_NOT_FOUND );
 }
 
 void http_consumer::consume( tcp_stream *client ) {
   unsigned char req_buffer[ http_request::max_size ] = {0};
   string        res_buffer;
-  http_request request;
+  http_request  request;
   http_response response;
   
   log( DEBUG, "New client connection from %s:%d", client->peer_address().c_str(), client->peer_port() );
@@ -94,11 +111,17 @@ http_server::~http_server() {
   }
 
   _consumers.clear();
+
+  for( auto i = _routes.begin(), e = _routes.end(); i != e; ++i ){
+    delete (*i);
+  }
+
+  _routes.clear();
 }
 
-void http_server::route( string path, http_controller *controller ) {
+void http_server::route( string path, http_controller *controller, Method method /* = ANY */ ) {
   log( DEBUG, "Registering controller %s for path '%s'", typeid(*controller).name(), path.c_str() );
-  _routes[path] = controller;
+  _routes.push_back( new http_route( path, controller, method ) );
 }
 
 void http_server::start() {

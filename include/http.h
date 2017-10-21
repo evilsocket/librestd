@@ -39,7 +39,8 @@ typedef enum {
   POST,
   PATCH,
   PUT,
-  CONNECT
+  CONNECT,
+  ANY
 }
 Method;
 
