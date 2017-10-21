@@ -41,6 +41,20 @@ class mutex
     }
 };
 
+class condition {
+  private:
+
+    pthread_cond_t _cond;
+
+  public:
+
+    condition();
+    virtual ~condition();
+
+    void signal();
+    void wait( mutex& m );
+};
+
 class scoped_mutex {
   private:
 

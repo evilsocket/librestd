@@ -31,32 +31,25 @@ class work_queue
 { 
   protected:
 
-    list<T>         _queue;
-    mutex           _mutex;
-    pthread_cond_t  _condv;
+    list<T>    _queue;
+    mutex      _mutex;
+    condition  _cond;
 
   public:
-
-    work_queue() {
-      pthread_cond_init(&_condv, NULL);
-    }
-
-    virtual ~work_queue() {
-      pthread_cond_destroy(&_condv);
-    }
 
     void add(T item) {
       scoped_mutex sm(&_mutex);
       _queue.push_back(item);
-      pthread_cond_signal(&_condv);
+      _cond.signal();
     }
 
     T remove() {
       scoped_mutex sm(&_mutex);
 
-      while (_queue.size() == 0) {
-        pthread_cond_wait(&_condv, &_mutex.m());
+      while( _queue.size() == 0 ) {
+        _cond.wait(_mutex);
       }
+
       T item = _queue.front();
       _queue.pop_front();
 

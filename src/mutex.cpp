@@ -36,4 +36,21 @@ void mutex::unlock() {
   pthread_mutex_unlock(&_mutex);
 }
 
+condition::condition() {
+  pthread_cond_init(&_cond, NULL);
+}
+
+condition::~condition() {
+  pthread_cond_destroy(&_cond);
+}
+
+void condition::signal() {
+  pthread_cond_signal(&_cond);
+}
+
+void condition::wait( mutex& m ) {
+  pthread_cond_wait(&_cond, &m.m());
+}
+
+
 }
