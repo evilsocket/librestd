@@ -38,7 +38,7 @@ class tcp_server
     tcp_server(int port, const char* address="");
     ~tcp_server();
 
-    int         start();
+    bool        start();
     tcp_stream* accept();
     void        stop();
 };

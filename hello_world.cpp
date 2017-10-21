@@ -82,21 +82,23 @@ class hello_world_controller : public restd::http_controller {
 };
 
 void usage(char *argvz) {
-  printf( "Usage: %s <-p port> <-D>\n", argvz );
+  printf( "Usage: %s <-a address> <-p port> <-D>\n", argvz );
 }
 int main(int argc, char **argv)
 {
+  std::string address = "127.0.0.1";
   restd::log_level_t llevel = restd::INFO;
   int port = 8080;
 
   int c;
 
-  while( (c = getopt(argc, argv, "p:Dh")) != -1)
+  while( (c = getopt(argc, argv, "a:p:Dh")) != -1)
   {
     switch(c)
     {
-      case 'p': port   = atoi(optarg); break;
-      case 'D': llevel = restd::DEBUG; break;
+      case 'a': address = optarg; break;
+      case 'p': port    = atoi(optarg); break;
+      case 'D': llevel  = restd::DEBUG; break;
 
       default:
           usage(argv[0]);
@@ -114,7 +116,7 @@ int main(int argc, char **argv)
 
     restd::crash_manager::init();
 
-    restd::http_server server( "127.0.0.1", port, std::thread::hardware_concurrency() );
+    restd::http_server server( address.c_str(), port, std::thread::hardware_concurrency() );
     
     server.route( "/debug", &dbg );
     server.route( "/hello", &hw );

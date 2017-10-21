@@ -36,7 +36,9 @@ tcp_server::~tcp_server() {
   }
 }
 
-int tcp_server::start() {
+bool tcp_server::start() {
+  int result = -1;
+
   if (_listening == true) {
     log( ERROR, "tcp_server already running." );
     return 0;
@@ -50,7 +52,11 @@ int tcp_server::start() {
   address.sin_port = htons(_port);
 
   if(_address.size() > 0) {
-    inet_pton(PF_INET, _address.c_str(), &(address.sin_addr));
+    result = inet_pton(PF_INET, _address.c_str(), &(address.sin_addr));
+    if( result != 1 ){
+      log( ERROR, "tcp_server: inet_pton: %d", result );
+      return false;
+    }
   }
   else {
     address.sin_addr.s_addr = INADDR_ANY;
@@ -59,20 +65,20 @@ int tcp_server::start() {
   int optval = 1;
   setsockopt(_lsd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval); 
 
-  int result = bind(_lsd, (struct sockaddr*)&address, sizeof(address));
+  result = bind(_lsd, (struct sockaddr*)&address, sizeof(address));
   if(result != 0) {
     log( ERROR, "tcp_server: bind failed: %d", result );
-    return result;
+    return false;
   }
 
   result = listen(_lsd, 5);
   if(result != 0) {
     log( ERROR, "tcp_server: listen failed: %d", result );
-    return result;
+    return false;
   }
 
   _listening = true;
-  return result;
+  return true;
 }
 
 tcp_stream *tcp_server::accept() {
