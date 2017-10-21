@@ -18,9 +18,8 @@
 */
 #pragma once
 
-#include <string.h>
+#include "strings.h"
 
-#include <string>
 #include <vector>
 #include <map>
 
@@ -44,51 +43,17 @@ typedef enum {
 }
 Method;
 
-static char *rtrim( char *p );
-
-template <char SEP>
-class char_iterator {
-  private:
-
-    char *ptr;
-    char sep[2];
-
-  public:
-
-    char_iterator( const char *buffer ) : ptr( (char *)buffer ) {
-      sep[0] = SEP;
-      sep[1] = 0x00;
-    }
-
-    virtual char *next() {
-      return strtok_r( ptr, sep, &ptr );
-    }
-};
-
-class line_iterator : public char_iterator<'\n'> {
-  public:
-    line_iterator( const char *buffer ) : char_iterator(buffer) { }
-
-    virtual char *next() {
-      char *p = char_iterator::next();
-      if( p ){
-        p = rtrim(p);
-      }
-      return p;
-    }
-};
-
-typedef char_iterator<'&'> params_iterator;
-typedef char_iterator<';'> cookies_iterator;
-typedef char_iterator<'='> keyval_iterator;
+typedef strings::char_iterator<'&'> params_iterator;
+typedef strings::char_iterator<';'> cookies_iterator;
+typedef strings::char_iterator<'='> keyval_iterator;
 
 class http_request 
 {
   private:
 
-    static bool parseMethodAndUri( http_request& req, line_iterator& iter );
-    static bool parseHeaders( http_request& req, line_iterator& iter );
-    static bool parseBody( http_request& req, line_iterator& iter, const unsigned char *buffer, size_t size );
+    static bool parseMethodAndUri( http_request& req, strings::line_iterator& iter );
+    static bool parseHeaders( http_request& req, strings::line_iterator& iter );
+    static bool parseBody( http_request& req, strings::line_iterator& iter, const unsigned char *buffer, size_t size );
     static bool parseParameters( http_request& req, const string& s );
     static bool parseCookies( http_request& req, const string& s );
 

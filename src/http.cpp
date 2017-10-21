@@ -35,81 +35,9 @@ static const std::regex PATH_QUERY_PARSER( "(/[^?]*)\\?(.+)" );
 // KEY: VALUE
 static const std::regex HEADER_PARSER("([^\\s]+)\\s*:\\s*(.+)");  
 
-char *rtrim( char *p ){
-  if( p ){
-    char *trail = NULL;
-
-    trail = strchr( p, '\r' );
-    if( trail ){
-      *trail = 0x00;
-    }
-
-    trail = strchr( p, '\n' );
-    if( trail ){
-      *trail = 0x00;
-    }
-  }
-  return p;
-}
-
-static inline void ltrim(std::string &s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-    return !std::isspace(ch);
-  }));
-}
-
-static inline void rtrim(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-    return !std::isspace(ch);
-  }).base(), s.end());
-}
-
-static inline void trim(std::string &s) {
-  ltrim(s);
-  rtrim(s);
-}
-
 const unsigned int http_request::max_size;
 
-string http_request::urldecode( const char *src ) {
-  string dst;
-
-  char a, b, c;
-  size_t i, len = strlen(src), left = len;
-
-  for( i = 0; i < len; ++i ) {
-    c = src[i];
-    left = len - i;
-
-    if( (c == '%') && left >= 2 && ((a = src[i + 1]) && (b = src[i + 2])) && (isxdigit(a) && isxdigit(b)) ) {
-      if (a >= 'a')
-        a -= 'a'-'A';
-      if (a >= 'A')
-        a -= ('A' - 10);
-      else
-        a -= '0';
-      if (b >= 'a')
-        b -= 'a'-'A';
-      if (b >= 'A')
-        b -= ('A' - 10);
-      else
-        b -= '0';
-
-      dst += 16*a+b;
-      i   += 2;
-    }
-    else if( c == '+' ) {
-      dst += ' ';
-    } 
-    else {
-      dst += c;
-    }
-  }
-
-  return dst;
-}
-
-bool http_request::parseMethodAndUri( http_request& req, line_iterator& iter ) {
+bool http_request::parseMethodAndUri( http_request& req, strings::line_iterator& iter ) {
   char *line = iter.next();
   if( line == NULL ){
     log( ERROR, "Could not get first line from request." );
@@ -168,7 +96,7 @@ bool http_request::parseMethodAndUri( http_request& req, line_iterator& iter ) {
   return true;
 }
 
-bool http_request::parseHeaders( http_request& req, line_iterator& iter ) {
+bool http_request::parseHeaders( http_request& req, strings::line_iterator& iter ) {
   for( char *line = iter.next(); line && strlen(line); line = iter.next() ){
     string s(line);
     std::smatch m;
@@ -197,7 +125,7 @@ bool http_request::parseHeaders( http_request& req, line_iterator& iter ) {
   return true;
 }
 
-bool http_request::parseBody( http_request& req, line_iterator& iter, const unsigned char *buffer, size_t size ) {
+bool http_request::parseBody( http_request& req, strings::line_iterator& iter, const unsigned char *buffer, size_t size ) {
   char *body = iter.next();
   if( body != NULL ){
     size_t body_size = size - ( body - (char *)buffer );
@@ -221,7 +149,7 @@ bool http_request::parseParameters( http_request& req, const string& s ) {
          *val = kv.next();
 
     if( key && strlen(key) ){
-      req.parameters[ string(key) ] = val ? urldecode(val) : string();
+      req.parameters[ string(key) ] = val ? strings::urldecode(val) : string();
       log( DEBUG, "    req.params[%s] = '%s'", key, req.parameters[key].c_str() );
     }
   }
@@ -241,10 +169,10 @@ bool http_request::parseCookies( http_request& req, const string& s ) {
       string skey = key,
              sval = val ? val : string();
 
-      trim(sval);
-      trim(skey);
+      strings::trim(sval);
+      strings::trim(skey);
 
-      req.cookies[skey] = urldecode(sval.c_str());
+      req.cookies[skey] = strings::urldecode(sval.c_str());
       log( DEBUG, "    req.cookies[%s] = '%s'", skey.c_str(), req.cookies[skey].c_str() );
     }
   }
@@ -253,7 +181,7 @@ bool http_request::parseCookies( http_request& req, const string& s ) {
 }
 
 bool http_request::parse( http_request& req, const unsigned char *buffer, size_t size ) {
-  line_iterator iter( (const char *)buffer );  
+  strings::line_iterator iter( (const char *)buffer );  
 
   req.raw = string( (const char *)buffer, size );
 
