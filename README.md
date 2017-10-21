@@ -2,7 +2,7 @@
 
 A low dependencies and self contained library to create C++ RESTful API services.
 
-**Work in Progress**
+**UNDER HEAVY DEVELOPMENT**
 
 ## Example
 
