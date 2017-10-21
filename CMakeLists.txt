@@ -4,7 +4,7 @@ project(restd_library)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Werror -Wno-unused-value -Wno-deprecated-declarations -std=c++0x")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Werror -std=c++0x")
 
 file( GLOB library_SOURCES src/*.cpp)
 

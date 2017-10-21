@@ -22,41 +22,14 @@
 #include "consumer.hpp"
 #include "tcp_server.h"
 #include "http.h"
-
-#include <regex>
+#include "http_route.h"
 
 namespace restd {
 
-class http_controller 
-{
-  public:
-    typedef void (http_controller::*handler_t)( http_request& req, http_response& resp );
-};
-
-class http_route 
-{
-  private:
-
-    bool           is_re;
-    std::regex     re;
-    vector<string> names;
-
-  public:
-
-    Method               method;
-    string               path;
-    http_controller     *controller;
-    http_controller::handler_t handler;
-
-    http_route( string path, http_controller *controller, http_controller::handler_t handler, Method method = ANY );
-
-    bool matches( http_request& req );
-    void call( http_request& req, http_response& resp );
-};
-
 typedef list<http_route *> routes_t;
 
-class http_consumer : public consumer<tcp_stream> {
+class http_consumer : public consumer<tcp_stream> 
+{
   private:
 
     routes_t *_routes;
@@ -69,7 +42,6 @@ class http_consumer : public consumer<tcp_stream> {
    
     virtual void consume( tcp_stream *client );
 };
-
 
 class http_server 
 {
