@@ -49,6 +49,23 @@ char *rtrim( char *p ){
   return p;
 }
 
+static inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+static inline void trim(std::string &s) {
+    ltrim(s);
+    rtrim(s);
+}
+
 const unsigned int http_request::max_size;
 
 string http_request::urldecode( const char *src ) {
@@ -166,6 +183,11 @@ bool http_request::parseHeaders( http_request& req, line_iterator& iter ) {
     if( name == "Host" ){
       req.host = value;
       log( DEBUG, "    req.host = '%s'", value.c_str() );
+    } else if( name == "Cookie" ) {
+      if( parseCookies( req, value ) == false ) {
+        // Maybe just log the error and continue?
+        return false;
+      }
     }
   }
 
@@ -198,6 +220,29 @@ bool http_request::parseParameters( http_request& req, const string& s ) {
     if( key && strlen(key) ){
       req.parameters[ string(key) ] = val ? urldecode(val) : string();
       log( DEBUG, "    req.params[%s] = '%s'", key, req.parameters[key].c_str() );
+    }
+  }
+
+  return true;
+}
+
+bool http_request::parseCookies( http_request& req, const string& s ) {
+  cookies_iterator c( s.c_str() ); 
+
+  for( char *cookie = c.next(); cookie; cookie = c.next() ){
+    keyval_iterator kv( cookie );
+    char *key = kv.next(),
+         *val = kv.next();
+
+    if( key && strlen(key) ){
+      string skey = key,
+             sval = val ? val : string();
+
+      trim(sval);
+      trim(skey);
+
+      req.cookies[skey] = urldecode(sval.c_str());
+      log( DEBUG, "    req.cookies[%s] = '%s'", skey.c_str(), req.cookies[skey].c_str() );
     }
   }
 

@@ -32,6 +32,7 @@ namespace restd {
 
 typedef std::map<std::string, std::string> headers_t;
 typedef std::map<std::string, std::string> params_t;
+typedef std::map<std::string, std::string> cookies_t;
 
 typedef enum {
   GET,
@@ -77,6 +78,7 @@ class line_iterator : public char_iterator<'\n'> {
 };
 
 typedef char_iterator<'&'> params_iterator;
+typedef char_iterator<';'> cookies_iterator;
 typedef char_iterator<'='> keyval_iterator;
 
 class http_request 
@@ -87,6 +89,7 @@ class http_request
     static bool parseHeaders( http_request& req, line_iterator& iter );
     static bool parseBody( http_request& req, line_iterator& iter, const unsigned char *buffer, size_t size );
     static bool parseParameters( http_request& req, const string& s );
+    static bool parseCookies( http_request& req, const string& s );
 
   public:
 
@@ -99,6 +102,7 @@ class http_request
     std::string    host;
     headers_t      headers;
     params_t       parameters;
+    cookies_t      cookies;
     std::string    body;
 
     inline bool has_header( const char *name ) const {
