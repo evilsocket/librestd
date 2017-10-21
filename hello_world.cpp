@@ -123,22 +123,44 @@ class hello_world : public restd::http_controller {
     }
 };
 
+typedef struct {
+  std::string        address;
+  unsigned short     port;
+  restd::log_level_t llevel;
+  unsigned int       workers;
+}
+args_t;
+
+static args_t args = {
+  .address = "127.0.0.1",
+  .port = 8080,
+  .llevel = restd::INFO,
+  .workers = std::thread::hardware_concurrency()
+};
+
+static struct option long_options[] = {
+    { "address", required_argument, NULL, 'a' },
+    { "port",    required_argument, NULL, 'p' },
+    { "workers", required_argument, NULL, 'w' },
+    { "debug",   no_argument,       NULL, 'd' },
+
+    {NULL, 0, NULL, 0}
+};
+
 void usage(char *argvz) {
-  printf( "Usage: %s <-a address> <-p port> <-D>\n", argvz );
+  printf( "Usage: %s <-a|--address ADDRESS> <-p|--port PORT> <-w|--workers N_WORKERS> <-d|--debug>\n", argvz );
 }
 
 int main(int argc, char **argv)
 {
-  std::string address       = "127.0.0.1";
-  unsigned short port       = 8080;
-  restd::log_level_t llevel = restd::INFO;
   int c;
 
-  while( (c = getopt(argc, argv, "a:p:Dh")) != -1) {
+  while( (c = getopt_long(argc, argv, "a:p:w:dh", long_options, NULL)) != -1) {
     switch(c) {
-      case 'a': address = optarg; break;
-      case 'p': port    = atoi(optarg); break;
-      case 'D': llevel  = restd::DEBUG; break;
+      case 'a': args.address = optarg; break;
+      case 'p': args.port    = atoi(optarg); break;
+      case 'd': args.llevel  = restd::DEBUG; break;
+      case 'w': args.workers = atoi(optarg); break;
 
       default:
           usage(argv[0]);
@@ -147,13 +169,13 @@ int main(int argc, char **argv)
   }
 
   try {
-    restd::set_log_level( llevel );
+    restd::set_log_level( args.llevel );
     restd::set_log_fp( stdout );
     restd::set_log_dateformat( "%c" );
 
     restd::crash_manager::init();
 
-    restd::http_server server( address.c_str(), port, std::thread::hardware_concurrency() );
+    restd::http_server server( args.address.c_str(), args.port, args.workers );
     
     hello_world hw;
 
