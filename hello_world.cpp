@@ -18,10 +18,55 @@
 */
 #include <getopt.h>
 #include <thread>
+#include <sstream>
 
 #include "restd.h"
 
-class hello_world : public restd::http_controller {
+class debug_controller : public restd::http_controller {
+  public:
+    void handle( restd::http_request& req, restd::http_response& resp ) {
+      std::stringstream ss;
+
+      #define KV_LINE(k,v) \
+        ss << "<tr><td width='10%' style='font-weight:bold'>" << k << "</td><td>" << v << "</td></tr>"
+
+      #define NESTED(n,v) \
+        ss << "<tr><td width='10%' style='font-weight:bold'>" << n << "</td><td>"; \
+          ss << "<table width='100%' border='0'>"; \
+          for( auto i = (v).begin(), e = (v).end(); i != e; ++i ){ \
+            KV_LINE( i->first, i->second ); \
+          } \
+          ss << "</table>"; \
+        ss << "</td></tr>"
+
+
+      ss << "<strong>THIS IS NOT XSS SAFE</strong><br><br>";
+
+      ss << "<pre>" << req.raw << "</pre>";
+
+      ss << "<table width='100%' border='1'>";
+
+      KV_LINE( "req.method", req.method_name() );
+      KV_LINE( "req.uri", req.uri );
+      KV_LINE( "req.path", req.path );
+      KV_LINE( "req.version", req.version );
+      KV_LINE( "req.host", req.host );
+
+      NESTED( "req.headers", req.headers );
+      NESTED( "req.cookies", req.cookies );
+      NESTED( "req.parameters", req.parameters );
+
+      KV_LINE( "&nbsp;", "&nbsp;" );
+
+      KV_LINE( "req.body", "<pre>" + req.body + "</pre>" );
+
+      ss << "</table>";
+
+      resp.html(ss.str());
+    }
+};
+
+class hello_world_controller : public restd::http_controller {
   public:
     void handle( restd::http_request& req, restd::http_response& resp ) {
       string output;
@@ -60,7 +105,8 @@ int main(int argc, char **argv)
   }
 
   try {
-    hello_world hw;
+    hello_world_controller hw;
+    debug_controller dbg;
 
     restd::set_log_level( llevel );
     restd::set_log_fp( stdout );
@@ -70,6 +116,7 @@ int main(int argc, char **argv)
 
     restd::http_server server( "127.0.0.1", port, std::thread::hardware_concurrency() );
     
+    server.route( "/debug", &dbg );
     server.route( "/hello", &hw );
 
     server.start();

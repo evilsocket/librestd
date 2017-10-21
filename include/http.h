@@ -95,6 +95,8 @@ class http_request
 
     static const unsigned int max_size = 8192;
 
+    std::string    raw;
+
     Method         method;
     std::string    uri;
     std::string    path;
@@ -104,6 +106,17 @@ class http_request
     params_t       parameters;
     cookies_t      cookies;
     std::string    body;
+
+    inline string method_name() const {
+      switch(method) {
+        case GET:     return "GET";
+        case POST:    return "POST";
+        case PATCH:   return "PATCH";
+        case PUT:     return "PUT";
+        case CONNECT: return "CONNECT";
+      }
+      return "???";
+    }
 
     inline bool has_header( const char *name ) const {
       return headers.find(name) != headers.end();

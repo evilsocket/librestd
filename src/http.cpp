@@ -252,6 +252,8 @@ bool http_request::parseCookies( http_request& req, const string& s ) {
 bool http_request::parse( http_request& req, const unsigned char *buffer, size_t size ) {
   line_iterator iter( (const char *)buffer );  
 
+  req.raw = string( (const char *)buffer, size );
+
   if( parseMethodAndUri( req, iter ) == false ){
     return false;
   }

@@ -27,10 +27,6 @@ namespace restd {
 
 class http_controller 
 {
-  protected:
-
-    static void build_json( http_response& resp, string json, http_response::Status status = http_response::HTTP_STATUS_OK );
-
   public:
     
     virtual void handle( http_request& req, http_response& resp ) = 0;
