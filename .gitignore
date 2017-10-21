@@ -1,0 +1,8 @@
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+hello_world
+*.a
+*.o
+*.sw*
