@@ -24,7 +24,7 @@
 
 namespace restd {
 
-#define HTTP_SERVER_SOFTWARE   "librestd-1.0"
+#define HTTP_SERVER_SOFTWARE   "librestd/1.0"
 #define HTTP_END_OF_HEADERS    "\r\n\r\n"
 #define HTTP_END_OF_HEADERS_SZ 4
 
