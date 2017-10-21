@@ -127,7 +127,7 @@ void http_consumer::consume( tcp_stream *client ) {
  
   route( request, response );
 
-  log( INFO, "%s -> %s %s [status=%d body=%d bytes]", 
+  log( INFO, "%s > \"%s %s\" %d %d", 
        client->peer_address().c_str(), 
        request.method_name().c_str(),
        request.path.c_str(),
