@@ -32,7 +32,22 @@ class hello_world : public restd::http_controller {
       ss << "Welcome to the librestd Hello World, click on one of the following routes:<br><br>";
 
       ss << "<a href='/hello'>Hello Route</a><br>";
+      ss << "<a href='/form'>Form Route</a><br>";
       ss << "<a href='/debug'>Debug Route</a><br>";
+
+      resp.html(ss.str());
+   }
+
+   // GET /form
+   void form( restd::http_request& req, restd::http_response& resp ) {
+      std::stringstream ss;
+
+      ss << "Test form to send stuff to /debug route in POST<br><br>";
+
+      ss << "<form action='/debug' method='POST'>";
+      ss << " <input type='text' name='some_input' placeholder='Fill me up baby ...'/>";
+      ss << " <input type='submit' value='Submit' />";
+      ss << "</form>";
 
       resp.html(ss.str());
    }
@@ -42,7 +57,7 @@ class hello_world : public restd::http_controller {
       std::stringstream ss;
 
       #define KV_LINE(k,v) \
-        ss << "<tr><td width='10%' style='font-weight:bold'>" << k << "</td><td>" << v << "</td></tr>"
+        ss << "<tr><td width='10%' style='font-weight:bold'>" << k << "</td><td><pre>" << v << "</pre></td></tr>"
 
       #define NESTED(n,v) \
         ss << "<tr><td width='10%' style='font-weight:bold'>" << n << "</td><td>"; \
@@ -71,7 +86,7 @@ class hello_world : public restd::http_controller {
 
       KV_LINE( "&nbsp;", "&nbsp;" );
 
-      KV_LINE( "req.body", "<pre>" + req.body + "</pre>" );
+      KV_LINE( "req.body", req.body );
 
       ss << "</table>";
 
@@ -128,6 +143,7 @@ int main(int argc, char **argv)
     hello_world hw;
 
     RESTD_ROUTE( server, restd::GET, "/",      hw, hello_world::index );
+    RESTD_ROUTE( server, restd::GET, "/form",  hw, hello_world::form );
     RESTD_ROUTE( server, restd::ANY, "/debug", hw, hello_world::debug );
     RESTD_ROUTE( server, restd::GET, "/hello", hw, hello_world::hello );
     
