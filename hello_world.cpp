@@ -19,6 +19,7 @@
 #include <getopt.h>
 #include <thread>
 #include <sstream>
+#include <ctime>
 
 #include <restd.h>
 
@@ -32,10 +33,38 @@ class hello_world : public restd::http_controller {
       ss << "Welcome to the librestd Hello World, click on one of the following routes:<br><br>";
 
       ss << "<a href='/hello'>Hello Route</a><br>";
+      ss << "<a href='/json'>JSON Route</a><br>";
       ss << "<a href='/form'>Form Route</a><br>";
       ss << "<a href='/debug'>Debug Route</a><br>";
 
       resp.html(ss.str());
+   }
+
+   // GET /hello
+   void hello( restd::http_request& req, restd::http_response& resp ) {
+     string output;
+
+     if( req.has_parameter("name") ){
+       output = "Hello world " + req.param("name");
+     } else {
+       output = "Hello world stranger, use the 'name' parameter to specify your name.";
+     }
+
+     resp.html(output);
+   }
+
+   // GET /json
+   void json( restd::http_request& req, restd::http_response& resp ) {
+     restd::json j = {
+       { "time", std::time(nullptr) },
+       { "string", "hello world" },
+       { "object", {
+           { "foo", "bar" },
+         } 
+       }
+     };
+
+     resp.json( j.dump() );
    }
 
    // GET /form
@@ -92,19 +121,6 @@ class hello_world : public restd::http_controller {
 
       resp.html(ss.str());
     }
-
-   // GET /hello
-   void hello( restd::http_request& req, restd::http_response& resp ) {
-     string output;
-
-     if( req.has_parameter("name") ){
-       output = "Hello world " + req.param("name");
-     } else {
-       output = "Hello world stranger, use the 'name' parameter to specify your name.";
-     }
-
-     resp.html(output);
-   }
 };
 
 void usage(char *argvz) {
@@ -143,9 +159,10 @@ int main(int argc, char **argv)
     hello_world hw;
 
     RESTD_ROUTE( server, restd::GET, "/",      hw, hello_world::index );
+    RESTD_ROUTE( server, restd::GET, "/hello", hw, hello_world::hello );
+    RESTD_ROUTE( server, restd::GET, "/json",  hw, hello_world::json );
     RESTD_ROUTE( server, restd::GET, "/form",  hw, hello_world::form );
     RESTD_ROUTE( server, restd::ANY, "/debug", hw, hello_world::debug );
-    RESTD_ROUTE( server, restd::GET, "/hello", hw, hello_world::hello );
     
     server.start();
   }

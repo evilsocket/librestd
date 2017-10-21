@@ -330,6 +330,10 @@ std::string http_response::str() {
     ss << i->first << ": " << i->second << "\r\n";
   }
 
+  if( headers.find("Server") == headers.end() ){
+    ss << "Server: librestd\r\n";
+  }
+
   if( headers.find("Content-Length") == headers.end() && !body.empty() ){
     ss << "Content-Length: " << body.size() << "\r\n";
   }
