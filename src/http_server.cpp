@@ -57,7 +57,7 @@ void http_consumer::route( http_request& request, http_response& response ) {
 
   log( WARNING, "No route defined for '%s %s'", request.method_name().c_str(), request.path.c_str() );
   
-  response.text( "Not Found", http_response::HTTP_STATUS_NOT_FOUND );
+  response.not_found();
 }
 
 void http_consumer::consume( tcp_stream *client ) {

@@ -236,6 +236,12 @@ http_response::http_response( Status status_, string body_ /* = "" */, string co
   }
 }
 
+void http_response::not_found() {
+  status = http_response::HTTP_STATUS_NOT_FOUND;
+  body   = "Not Found";
+  headers["Content-Type"] = "text/plain";
+}
+
 void http_response::text( string text, http_response::Status status /* = http_response::HTTP_STATUS_OK */ ) {
   status = status;
   body   = text;

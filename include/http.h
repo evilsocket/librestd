@@ -138,6 +138,8 @@ class http_response
     http_response( Status status_, string body_ = "", string content_type = "text/plain" );
     http_response();
 
+    void not_found();
+
     void text( string text, http_response::Status status = http_response::HTTP_STATUS_OK );
     void html( string html, http_response::Status status = http_response::HTTP_STATUS_OK );
     void json( string json, http_response::Status status = http_response::HTTP_STATUS_OK );
