@@ -33,29 +33,24 @@ http_route::http_route( string path, http_controller *controller, http_controlle
   controller(controller),
   handler(handler){
 
-  string tmp(path);
   std::smatch m;
-  while( std::regex_search( tmp, m, NAMED_PARAM_PARSER ) == true && m.size() == 3 ) {
-    is_re = true;
-
+  while( std::regex_search( path, m, NAMED_PARAM_PARSER ) == true && m.size() == 3 ) {
     string tok  = m[0].str(),
            name = m[1].str(),
            expr = m[2].str();
+
+    log( DEBUG, "Found named parameter '%s' ( validator='%s' )", name.c_str(), expr.c_str() );
 
     strings::replace( this->path, tok, "(" + expr + ")" );
 
     names.push_back(name);
 
-    log( DEBUG, "Found named parameter in '%s':", tmp.c_str() );
-    for( int i = 0; i < m.size(); ++i ) {
-      log( DEBUG, "  m[%d] = '%s'", i, m[i].str().c_str() );
-    }
-
-    tmp = m.suffix();
+    is_re = true;
+    path = m.suffix();
   }
 
   if(is_re) {
-    log( DEBUG, "Final path = '%s'", this->path.c_str() );
+    log( DEBUG, "Route expression: '%s'", this->path.c_str() );
     re = std::regex( this->path, std::regex_constants::icase );
   }
 }
