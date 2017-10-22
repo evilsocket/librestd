@@ -129,6 +129,8 @@ void http_server::start() {
         _queue.add(client);
       }
     }
+  } else {
+    log( CRITICAL, "Could not start http_server." );
   }
 }
 
