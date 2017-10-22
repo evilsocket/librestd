@@ -40,12 +40,12 @@ class http_route
 
   public:
 
-    Method                     method;
+    unsigned int               methods;
     string                     path;
     http_controller           *controller;
     http_controller::handler_t handler;
 
-    http_route( string path, http_controller *controller, http_controller::handler_t handler, Method method = ANY );
+    http_route( string path, http_controller *controller, http_controller::handler_t handler, unsigned int methods = ANY );
 
     bool matches( http_request& req );
     void call( http_request& req, http_response& resp );

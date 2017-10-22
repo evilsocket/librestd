@@ -60,7 +60,7 @@ class http_server
    http_server( string address, unsigned short port, unsigned int threads );
    virtual ~http_server();
 
-   void route( string path, http_controller *controller, http_controller::handler_t handler, Method method = ANY );
+   void route( string path, http_controller *controller, http_controller::handler_t handler, unsigned int methods = ANY );
 
    void start();
 };

@@ -23,9 +23,9 @@ namespace restd {
 
 const static std::regex NAMED_PARAM_PARSER( ":([_a-z0-9]+)\\(([^\\)]*)\\)", std::regex_constants::icase );
 
-http_route::http_route( string path, http_controller *controller, http_controller::handler_t handler, Method method /* = ANY */ ) :
+http_route::http_route( string path, http_controller *controller, http_controller::handler_t handler, unsigned int methods /* = ANY */ ) :
   is_re(false),
-  method(method),
+  methods(methods),
   path(path),
   controller(controller),
   handler(handler){
@@ -53,7 +53,7 @@ http_route::http_route( string path, http_controller *controller, http_controlle
 }
 
 bool http_route::matches( http_request& req ) {
-  if( method != ANY && req.method != method ) {
+  if( ( methods & req.method ) != req.method ) {
     return false;
   }
 

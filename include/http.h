@@ -34,12 +34,13 @@ typedef std::map<std::string, std::string> params_t;
 typedef std::map<std::string, std::string> cookies_t;
 
 typedef enum {
-  GET,
-  POST,
-  PATCH,
-  PUT,
-  CONNECT,
-  ANY
+  GET     = 1 << 0,
+  POST    = 1 << 1,
+  PATCH   = 1 << 2,
+  PUT     = 1 << 3,
+  CONNECT = 1 << 4,
+
+  ANY     = 0xffff
 }
 Method;
 

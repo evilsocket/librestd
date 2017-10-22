@@ -110,9 +110,9 @@ http_server::~http_server() {
   _routes.clear();
 }
 
-void http_server::route( string path, http_controller *controller, http_controller::handler_t handler, Method method /* = ANY */ ) {
+void http_server::route( string path, http_controller *controller, http_controller::handler_t handler, unsigned int methods /* = ANY */ ) {
   log( DEBUG, "Registering controller %s for path '%s'", typeid(*controller).name(), path.c_str() );
-  _routes.push_back( new http_route( path, controller, handler, method ) );
+  _routes.push_back( new http_route( path, controller, handler, methods ) );
 }
 
 void http_server::start() {
