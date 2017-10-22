@@ -101,7 +101,6 @@ class http_request
       return string(deflt);
     }
 
-    static string urldecode( const char *src );
     static bool parse( http_request& req, const unsigned char *buffer, size_t size );
 };
 

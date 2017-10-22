@@ -134,7 +134,7 @@ bool http_request::parseBody( http_request& req, strings::line_iterator& iter, c
     log( DEBUG, "  req.body = (%lu bytes)", body_size );
     req.body = string( body, body_size );
 
-    if( req.headers.find("Content-Type") != req.headers.end() ) {
+    if( req.has_header("Content-Type") ) {
       string content_type = req.headers["Content-Type"];
 
       if( content_type == "application/x-www-form-urlencoded" ){
