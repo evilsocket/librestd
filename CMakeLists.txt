@@ -16,16 +16,12 @@ set(library_SOURCES
   include/http_server.h
   src/log.cpp
   include/log.h
-  src/mutex.cpp
-  include/mutex.h
   src/strings.cpp
   include/strings.h
   src/tcp_server.cpp
   include/tcp_server.h
   src/tcp_stream.cpp
   include/tcp_stream.h
-  src/thread.cpp
-  include/thread.h
   include/consumer.hpp
   include/json.hpp
   include/restd.h

@@ -18,32 +18,42 @@
 */
 #pragma once
 
-#include "thread.h"
+#include <thread>
 
 namespace restd {
 
 template <typename T> 
-class consumer : public restd::thread
+class consumer 
 {
   protected:
 
+    bool             _running;
+    std::thread      _thread;
     work_queue<T *>& _queue;
  
-  public:
-
-    consumer(work_queue<T *>& queue) : _queue(queue) {}
-
-    virtual void consume( T *item ) = 0;
-
-    void* run() {
-      while(true) {
+    void run() {
+      while(_running) {
         T *item = _queue.remove();
         this->consume(item);
         delete item;
       }
-
-      return NULL;
     }
+
+  public:
+
+    consumer(work_queue<T *>& queue) : _queue(queue), _running(false) {}
+
+    void start() {
+      _running = true;
+      _thread = std::thread(&consumer::run, this);
+    }
+
+    void stop() {
+      _running = false;
+      _thread.join();
+    }
+
+    virtual void consume( T *item ) = 0;
 };
 
 }

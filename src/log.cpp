@@ -17,7 +17,6 @@
  * along with librestd.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "log.h"
-#include "mutex.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -26,8 +25,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string>
+#include <mutex>
 
 using std::string;
+using std::mutex;
 
 namespace restd {
 
@@ -57,7 +58,7 @@ void log( log_level_t level, const char *format, ... ) {
   struct tm * timeinfo = NULL;
 
   if( level >= __level ) {
-    scoped_mutex sm(&__mutex);
+    std::unique_lock<std::mutex> lock(__mutex);
 
     va_start( ap, format );
     vsnprintf( buffer, 4096, format, ap );

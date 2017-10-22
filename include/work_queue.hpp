@@ -18,9 +18,9 @@
 */
 #pragma once
 
-#include "mutex.h"
-#include <pthread.h>
 #include <list>
+#include <condition_variable>
+#include <mutex>
 #include <stdio.h>
  
 using namespace std;
@@ -32,24 +32,24 @@ class work_queue
 { 
   protected:
 
-    list<T>    _queue;
-    mutex      _mutex;
-    condition  _avail;
+    list<T>            _queue;
+    mutex              _mutex;
+    condition_variable _avail;
 
   public:
 
     void add(T item) {
-      scoped_mutex sm(&_mutex);
+      std::unique_lock<std::mutex> lock(_mutex);
 
       _queue.push_back(item);
-      _avail.signal();
+      _avail.notify_one();
     }
 
     T remove() {
-      scoped_mutex sm(&_mutex);
+      std::unique_lock<std::mutex> lock(_mutex);
 
       while( _queue.size() == 0 ) {
-        _avail.wait(_mutex);
+        _avail.wait(lock);
       }
 
       T item = _queue.front();
@@ -59,7 +59,7 @@ class work_queue
     }
 
     int size() {
-      scoped_mutex sm(&_mutex);
+      std::unique_lock<std::mutex> lock(_mutex);
 
       int size = _queue.size();
       return size;
