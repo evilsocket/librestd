@@ -82,7 +82,7 @@ bool http_request::parseMethodAndUri( http_request& req, strings::line_iterator&
   if( std::regex_search( s, m, PATH_QUERY_PARSER ) != false && m.size() == 3 ) {
     req.path = m[1].str();
     string params = m[2].str();
-    if( parseParameters( req, params ) == false ){
+    if( parseUrlencodedFormParameters( req, params ) == false ){
       return false;
     }
   }
@@ -134,15 +134,23 @@ bool http_request::parseBody( http_request& req, strings::line_iterator& iter, c
     log( DEBUG, "  req.body = (%lu bytes)", body_size );
     req.body = string( body, body_size );
 
-    if( req.headers.find("Content-Type") != req.headers.end() && req.headers["Content-Type"] == "application/x-www-form-urlencoded" ){
-      return parseParameters( req, req.body );  
+    if( req.headers.find("Content-Type") != req.headers.end() ) {
+      string content_type = req.headers["Content-Type"];
+
+      if( content_type == "application/x-www-form-urlencoded" ){
+        return parseUrlencodedFormParameters( req, req.body );  
+      } 
+      else {
+        log( ERROR, "Unhandled content type '%s'.", content_type.c_str() );
+        return false;
+      }
     }
   }
 
   return true;
 }
 
-bool http_request::parseParameters( http_request& req, const string& s ) {
+bool http_request::parseUrlencodedFormParameters( http_request& req, const string& s ) {
   params_iterator params( s.c_str() ); 
 
   for( char *param = params.next(); param; param = params.next() ){

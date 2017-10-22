@@ -54,8 +54,10 @@ class http_request
     static bool parseMethodAndUri( http_request& req, strings::line_iterator& iter );
     static bool parseHeaders( http_request& req, strings::line_iterator& iter );
     static bool parseBody( http_request& req, strings::line_iterator& iter, const unsigned char *buffer, size_t size );
-    static bool parseParameters( http_request& req, const string& s );
     static bool parseCookies( http_request& req, const string& s );
+
+    // Body parsers.
+    static bool parseUrlencodedFormParameters( http_request& req, const string& s );
 
   public:
 
