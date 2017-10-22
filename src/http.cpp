@@ -29,11 +29,11 @@ namespace restd {
 #define HTTP_END_OF_HEADERS_SZ 4
 
 // METHOD /URI HTTP/VERSION
-static const std::regex FIRST_LINE_PARSER("([^\\s]+)\\s+([^\\s]+)\\s+HTTP.([\\d\\.]+)");  
+static const std::regex kFirstLineParser("([^\\s]+)\\s+([^\\s]+)\\s+HTTP.([\\d\\.]+)");  
 // /PATH?QUERY
-static const std::regex PATH_QUERY_PARSER( "(/[^?]*)\\?(.+)" );
+static const std::regex kPathQueryParser( "(/[^?]*)\\?(.+)" );
 // KEY: VALUE
-static const std::regex HEADER_PARSER("([^\\s]+)\\s*:\\s*(.+)");  
+static const std::regex kHeaderParser("([^\\s]+)\\s*:\\s*(.+)");  
 
 const unsigned int http_request::max_size;
 
@@ -46,7 +46,7 @@ bool http_request::parseMethodAndUri( http_request& req, strings::line_iterator&
 
   string s(line);
   std::smatch m;
-  if( std::regex_search( s, m, FIRST_LINE_PARSER ) == false || m.size() != 4 ) {
+  if( std::regex_search( s, m, kFirstLineParser ) == false || m.size() != 4 ) {
     log( ERROR, "Error while parsing first line from request: '%s'.", line );
     return false;
   }
@@ -79,7 +79,7 @@ bool http_request::parseMethodAndUri( http_request& req, strings::line_iterator&
   log( DEBUG, "  req.uri     = %s", req.uri.c_str() );
 
   s = req.uri;
-  if( std::regex_search( s, m, PATH_QUERY_PARSER ) != false && m.size() == 3 ) {
+  if( std::regex_search( s, m, kPathQueryParser ) != false && m.size() == 3 ) {
     req.path = m[1].str();
     string params = m[2].str();
     if( parseUrlencodedFormParameters( req, params ) == false ){
@@ -100,7 +100,7 @@ bool http_request::parseHeaders( http_request& req, strings::line_iterator& iter
   for( char *line = iter.next(); line && strlen(line); line = iter.next() ){
     string s(line);
     std::smatch m;
-    if( std::regex_search( s, m, HEADER_PARSER ) == false || m.size() != 3 ) {
+    if( std::regex_search( s, m, kHeaderParser ) == false || m.size() != 3 ) {
       log( ERROR, "Error while parsing header from request: '%s'.", line );
       return false;
     }

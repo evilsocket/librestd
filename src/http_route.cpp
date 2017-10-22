@@ -21,7 +21,7 @@
 
 namespace restd {
 
-const static std::regex NAMED_PARAM_PARSER( ":([_a-z0-9]+)\\(([^\\)]*)\\)", std::regex_constants::icase );
+const static std::regex kNamedParamParser( ":([_a-z0-9]+)\\(([^\\)]*)\\)", std::regex_constants::icase );
 
 http_route::http_route( string path, http_controller *controller, http_controller::handler_t handler, unsigned int methods /* = ANY */ ) :
   is_re(false),
@@ -32,7 +32,7 @@ http_route::http_route( string path, http_controller *controller, http_controlle
   handler(handler){
 
   std::smatch m;
-  while( std::regex_search( path, m, NAMED_PARAM_PARSER ) == true && m.size() == 3 ) {
+  while( std::regex_search( path, m, kNamedParamParser ) == true && m.size() == 3 ) {
     string tok  = m[0].str(),
            name = m[1].str(),
            expr = m[2].str();
