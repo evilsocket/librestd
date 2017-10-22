@@ -37,6 +37,7 @@ class http_route
     bool           is_re;
     std::regex     re;
     vector<string> names;
+    size_t         re_expected;
 
   public:
 

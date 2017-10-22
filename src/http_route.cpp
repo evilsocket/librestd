@@ -25,6 +25,7 @@ const static std::regex NAMED_PARAM_PARSER( ":([_a-z0-9]+)\\(([^\\)]*)\\)", std:
 
 http_route::http_route( string path, http_controller *controller, http_controller::handler_t handler, unsigned int methods /* = ANY */ ) :
   is_re(false),
+  re_expected(0),
   methods(methods),
   path(path),
   controller(controller),
@@ -48,22 +49,25 @@ http_route::http_route( string path, http_controller *controller, http_controlle
 
   if(is_re) {
     log( DEBUG, "Named route expression: '%s'", this->path.c_str() );
+    re_expected = names.size() + 1;
     re = std::regex( this->path, std::regex_constants::icase );
   }
 }
 
 bool http_route::matches( http_request& req ) {
+  // is the method in the bitmask?
   if( ( methods & req.method ) != req.method ) {
     return false;
   }
-
+  // if this is not a regexp, just return the string match.
   if( is_re == false ) {
     return req.path == path;
   }
-
+  // check for named parameters regular expression..
   std::smatch m;
-  if( std::regex_search( req.path, m, re ) == true && m.size() == names.size() + 1 ) {
-    for( int i = 1; i < m.size(); ++i ) {
+  if( std::regex_search( req.path, m, re ) == true && m.size() == re_expected ) {
+    // fill parameters inside the request using the tokenized path.
+    for( size_t i = 1; i < re_expected; ++i ) {
       req.parameters[ names[i - 1] ] = m[i].str();
     }
 
