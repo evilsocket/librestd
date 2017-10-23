@@ -65,7 +65,16 @@ class hello_world : public restd::http_controller {
        }
      };
 
-     resp.json( j.dump() );
+     resp.json( j.dump(2) );
+   }
+
+   // POST /jecho
+   void jecho( restd::http_request& req, restd::http_response& resp ) {
+     if( req.is_json() ) {
+      resp.json( req.json.dump(2) );
+     } else {
+      resp.text( "Wrong Content-Type dude!", restd::http_response::HTTP_STATUS_BAD_REQUEST );
+     }
    }
 
    // GET /form
@@ -180,12 +189,19 @@ int main(int argc, char **argv)
     
     hello_world hw;
 
-    RESTD_ROUTE( server, restd::GET, "/",      hw, hello_world::index );
-    RESTD_ROUTE( server, restd::GET, "/hello", hw, hello_world::hello );
-    RESTD_ROUTE( server, restd::GET, "/json",  hw, hello_world::json );
-    RESTD_ROUTE( server, restd::GET, "/form",  hw, hello_world::form );
-    RESTD_ROUTE( server, restd::ANY, "/debug", hw, hello_world::debug );
-    RESTD_ROUTE( server, restd::GET, "/named/:hash([a-f0-9]{32})/?:optional(.*)", hw, hello_world::debug );
+    // simple GET routes
+    RESTD_ROUTE( server, restd::GET,  "/",      hw, hello_world::index );
+    RESTD_ROUTE( server, restd::GET,  "/hello", hw, hello_world::hello );
+    // return a json response from data structure
+    RESTD_ROUTE( server, restd::GET,  "/json",  hw, hello_world::json );
+    // parses json request and echoes it back if valid
+    RESTD_ROUTE( server, restd::POST, "/jecho", hw, hello_world::jecho );
+    // a form to test POST to /debug
+    RESTD_ROUTE( server, restd::GET,  "/form",  hw, hello_world::form );
+    // dumps everything about the request
+    RESTD_ROUTE( server, restd::ANY,  "/debug", hw, hello_world::debug );
+    // route with named parameters and validators.
+    RESTD_ROUTE( server, restd::GET,  "/named/:hash([a-f0-9]{32})/?:optional(.*)", hw, hello_world::debug );
     
     server.start();
   }

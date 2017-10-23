@@ -96,6 +96,18 @@ class http_request
       return headers.find(name) != headers.end();
     }
 
+    inline bool header_is( const char *name, const char *value ) {
+      if( has_header(name) ) {
+        return ( headers[name] == value );
+      }
+
+      return false;
+    }
+
+    inline bool is_json() {
+      return header_is( "Content-Type", "application/json" );
+    }
+
     inline bool has_parameter( const char *name ) const {
       return parameters.find(name) != parameters.end();
     }
