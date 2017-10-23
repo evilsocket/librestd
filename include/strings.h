@@ -20,7 +20,7 @@
 
 // string all the things!
 #include <string>
-#include <string.h>
+#include <cstring>
 
 namespace restd {
 namespace strings {

@@ -17,10 +17,10 @@
  * along with librestd.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdio.h>
-#include <string.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include "strings.h"
 #include "tcp_stream.h"
 #include "log.h"
 #include "tcp_server.h"
