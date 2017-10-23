@@ -36,7 +36,7 @@ target_include_directories(restd
 
 target_compile_options(restd
   PRIVATE
-    $<$<CXX_COMPILER_ID:GNU>:-Werror>
+    $<$<CXX_COMPILER_ID:GNU>:-Werror -pedantic>
     $<$<CONFIG:DEBUG>:-O1>
     $<$<CONFIG:RELEASE>:-O3>)
 
