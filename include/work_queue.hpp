@@ -45,7 +45,7 @@ class work_queue
       _avail.notify_one();
     }
 
-    T remove() {
+    T get() {
       std::unique_lock<std::mutex> lock(_mutex);
 
       while( _queue.size() == 0 ) {
@@ -61,8 +61,7 @@ class work_queue
     int size() {
       std::unique_lock<std::mutex> lock(_mutex);
 
-      int size = _queue.size();
-      return size;
+      return _queue.size();
     }
 };
 

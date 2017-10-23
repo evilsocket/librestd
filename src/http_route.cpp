@@ -37,7 +37,7 @@ http_route::http_route( string path, http_controller *controller, http_controlle
            name = m[1].str(),
            expr = m[2].str();
 
-    log( DEBUG, "Found named parameter '%s' ( validator='%s' )", name.c_str(), expr.c_str() );
+    log( DEBUG, "  Found named parameter '%s' ( validator='%s' )", name.c_str(), expr.c_str() );
 
     strings::replace( this->path, tok, "(" + expr + ")" );
 
@@ -48,7 +48,7 @@ http_route::http_route( string path, http_controller *controller, http_controlle
   }
 
   if(is_re) {
-    log( DEBUG, "Named route expression: '%s'", this->path.c_str() );
+    log( DEBUG, " Named route expression: '%s'", this->path.c_str() );
     re_expected = names.size() + 1;
     re = std::regex( this->path, std::regex_constants::icase );
   }

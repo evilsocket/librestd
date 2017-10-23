@@ -33,7 +33,7 @@ class consumer
  
     void run() {
       while(_running) {
-        T *item = _queue.remove();
+        T *item = _queue.get();
         this->consume(item);
         delete item;
       }
