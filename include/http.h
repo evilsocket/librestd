@@ -19,6 +19,7 @@
 #pragma once
 
 #include "strings.h"
+#include "json.hpp"
 
 #include <vector>
 #include <map>
@@ -28,6 +29,8 @@ using std::vector;
 using std::map;
 
 namespace restd {
+
+using json = nlohmann::json;
 
 typedef std::map<std::string, std::string> headers_t;
 typedef std::map<std::string, std::string> params_t;
@@ -59,6 +62,7 @@ class http_request
 
     // Body parsers.
     static bool parseUrlencodedFormParameters( http_request& req, const string& s );
+    static bool parseJson( http_request& req, const string& s );
 
   public:
 
@@ -75,6 +79,7 @@ class http_request
     params_t       parameters;
     cookies_t      cookies;
     std::string    body;
+    nlohmann::json json;
 
     inline string method_name() const {
       switch(method) {
@@ -140,6 +145,7 @@ class http_response
     http_response( Status status_, string body_ = "", string content_type = "text/plain" );
     http_response();
 
+    void bad_request();
     void not_found();
 
     void text( string text, http_response::Status status = http_response::HTTP_STATUS_OK );

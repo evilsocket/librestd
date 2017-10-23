@@ -21,8 +21,3 @@
 #include "http_server.h"
 #include "crash_manager.h"
 #include "log.h"
-#include "json.hpp"
-
-namespace restd {
-  using json = nlohmann::json;
-}

@@ -140,9 +140,11 @@ bool http_request::parseBody( http_request& req, strings::line_iterator& iter, c
       if( content_type == "application/x-www-form-urlencoded" ){
         return parseUrlencodedFormParameters( req, req.body );  
       } 
+      else if( content_type == "application/json" ){
+        return parseJson( req, req.body );
+      }
       else {
-        log( ERROR, "Unhandled content type '%s'.", content_type.c_str() );
-        return false;
+        log( DEBUG, "Unhandled content type '%s'.", content_type.c_str() );
       }
     }
   }
@@ -165,6 +167,17 @@ bool http_request::parseUrlencodedFormParameters( http_request& req, const strin
   }
 
   return true;
+}
+
+bool http_request::parseJson( http_request& req, const string& s ) {
+  try {
+    req.json = json::parse( req.body );
+    return true;
+  }
+  catch( const std::invalid_argument& e ) {
+    log( ERROR, "Error while parsing application/json request: %s", e.what() );
+    return false;
+  }
 }
 
 bool http_request::parseCookies( http_request& req, const string& s ) {
@@ -242,6 +255,12 @@ http_response::http_response( Status status_, string body_ /* = "" */, string co
   if( !content_type.empty() ){
     headers["Content-Type"] = content_type;
   }
+}
+
+void http_response::bad_request() {
+  status = http_response::HTTP_STATUS_BAD_REQUEST;
+  body   = "Bad Request";
+  headers["Content-Type"] = "text/plain; charset=utf-8";
 }
 
 void http_response::not_found() {

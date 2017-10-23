@@ -26,7 +26,7 @@ void http_consumer::route( http_request& request, http_response& response ) {
     http_route *route = *i;
 
     if( route->matches( request ) ) {
-      log( DEBUG, "'%s %s' matched controller %s", request.method_name().c_str(), request.path.c_str(), typeid(*route->controller).name() );
+      log( DEBUG, "'%s %s' matched route.", request.method_name().c_str(), request.path.c_str() );
       route->call( request, response );
       return;
     }
@@ -56,16 +56,20 @@ void http_consumer::consume( tcp_stream *client ) {
   // std::regex_error might be thrown
   try {
     if( http_request::parse( request, req_buffer, read ) == false ){
-      log( ERROR, "Could not parse request:\n%s", req_buffer );
-      return;
+      log( ERROR, "Could not parse request: %s", req_buffer );
+      response.bad_request();
+      goto done;
     }
   }
   catch( const std::regex_error& e ){
     log( ERROR, "Exception (%d) while parsing request: %s", e.code(), e.what() );
-    return;
+    response.bad_request();
+    goto done;
   }
  
   route( request, response );
+
+done:
 
   log( INFO, "%s > \"%s %s\" %d %d", 
        client->peer_address().c_str(), 
@@ -111,7 +115,7 @@ http_server::~http_server() {
 }
 
 void http_server::route( string path, http_controller *controller, http_controller::handler_t handler, unsigned int methods /* = ANY */ ) {
-  log( DEBUG, "Registering controller %s for path '%s'", typeid(*controller).name(), path.c_str() );
+  log( DEBUG, "Registering controller for path '%s'", path.c_str() );
   _routes.push_back( new http_route( path, controller, handler, methods ) );
 }
 
