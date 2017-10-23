@@ -5,27 +5,29 @@ project(restd_library VERSION 0.1.0)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-set(library_SOURCES
-  src/crash_manager.cpp
+set(library_INCLUDES
   include/crash_manager.h
-  src/http.cpp
   include/http.h
-  src/http_route.cpp
   include/http_route.h
-  src/http_server.cpp
   include/http_server.h
-  src/log.cpp
   include/log.h
-  src/strings.cpp
   include/strings.h
-  src/tcp_server.cpp
   include/tcp_server.h
-  src/tcp_stream.cpp
   include/tcp_stream.h
   include/consumer.hpp
   include/json.hpp
   include/restd.h
   include/work_queue.hpp)
+
+set(library_SOURCES
+  src/crash_manager.cpp
+  src/http.cpp
+  src/http_route.cpp
+  src/http_server.cpp
+  src/log.cpp
+  src/strings.cpp
+  src/tcp_server.cpp
+  src/tcp_stream.cpp)
 
 add_library(restd ${library_SOURCES})
 
@@ -59,7 +61,11 @@ install(TARGETS restd EXPORT restdTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(
+    FILES ${library_INCLUDES}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/restd
+)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(cmake/restdConfigVersion.cmake
