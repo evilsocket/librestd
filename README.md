@@ -1,10 +1,19 @@
 # librestd
 
-A low dependencies and self contained library to create C++ RESTful API services.
+A low dependencies and self contained library to create C++ RESTful API services ( **UNDER HEAVY DEVELOPMENT** ).
 
-**UNDER HEAVY DEVELOPMENT**
+## Compilation
 
-## Example
+    git clone https://github.com/evilsocket/librestd.git
+    cd librestd
+    cmake -DCMAKE_BUILD_TYPE=Release .
+    make 
+    
+And install with:
+
+    sudo make install
+
+## Usage
 
 For an usage example see the `hello_world.cpp` file.
 
