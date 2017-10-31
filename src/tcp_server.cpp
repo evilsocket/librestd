@@ -25,9 +25,15 @@
 #include "log.h"
 #include "tcp_server.h"
 
+#include <sys/un.h>
+#include <sys/stat.h>
+
 namespace restd {
 
-tcp_server::tcp_server(int port, const char* address) : _lsd(0), _port(port), _address(address), _listening(false) {} 
+tcp_server::tcp_server(int port, const char* address) : _lsd(0), _port(port), _address(address), _listening(false), _is_unix(false), _domain(AF_INET) {
+  _is_unix = address[0] == '/';
+  _domain  = _is_unix ? AF_LOCAL : AF_INET;
+} 
 
 tcp_server::~tcp_server() {
   log( DEBUG, "Closing tcp_server ..." );
@@ -38,47 +44,84 @@ tcp_server::~tcp_server() {
 
 bool tcp_server::start() {
   int result = -1;
+  struct sockaddr *paddress = NULL;
+  size_t addrsz = 0;
 
   if (_listening == true) {
     log( ERROR, "tcp_server already running." );
     return 0;
   }
 
-  _lsd = socket(PF_INET, SOCK_STREAM, 0);
-  struct sockaddr_in address;
-
-  memset(&address, 0, sizeof(address));
-  address.sin_family = PF_INET;
-  address.sin_port = htons(_port);
-
-  if(_address.size() > 0) {
-    result = inet_pton(PF_INET, _address.c_str(), &(address.sin_addr));
-    if( result != 1 ){
-      log( ERROR, "tcp_server: inet_pton: %d", result );
-      return false;
-    }
-  }
-  else {
-    address.sin_addr.s_addr = INADDR_ANY;
+  // LSD ftw!
+  _lsd = socket( _domain, SOCK_STREAM, 0 );
+  if( _lsd == -1 ) {
+    log( ERROR, "tcp_server: main socket creation failed: %s", strerror(errno) );
+    return false;
   }
 
   // Make sure connection-intensive things will be able to close/open sockets a zillion of times.
   int optval = 1;
   if( setsockopt(_lsd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) == -1 ) {
-    log( ERROR, "tcp_server: setsockopt( SO_REUSEADDR setsockopt( SO_REUSEADDR )iled: %d", errno );
+    log( ERROR, "tcp_server: setsockopt( SO_REUSEADDR ) failed: %s", strerror(errno) );
     return false;
   }
 
-  result = bind(_lsd, (struct sockaddr*)&address, sizeof(address));
+  // bind to unix socket, _port parameter contains permissions.
+  if( _is_unix ) {
+    log( DEBUG, "Creating UNIX socket on '%s', mode is %u.", _address.c_str(), _port );
+
+    struct sockaddr_un unix_address;
+
+    paddress = (struct sockaddr *)&unix_address;
+    addrsz   = sizeof(unix_address);
+
+    memset(&unix_address, 0, addrsz);
+
+    unix_address.sun_family = AF_LOCAL;
+    strncpy( unix_address.sun_path, _address.c_str(), sizeof(unix_address.sun_path) - 1 );
+  } 
+  // bind to ip socket.
+  else {
+    log( DEBUG, "Creating IP socket on '%s', port is %u.", _address.c_str(), _port );
+
+    struct sockaddr_in ip_address;
+
+    paddress = (struct sockaddr *)&ip_address;
+    addrsz   = sizeof(ip_address);
+
+    memset(&ip_address, 0, addrsz);
+    ip_address.sin_family = PF_INET;
+    ip_address.sin_port = htons(_port);
+
+    if(_address.size() > 0) {
+      result = inet_pton(PF_INET, _address.c_str(), &(ip_address.sin_addr));
+      if( result != 1 ){
+        log( ERROR, "tcp_server: inet_pton: %s", strerror(errno) );
+        return false;
+      }
+    }
+    else {
+      ip_address.sin_addr.s_addr = INADDR_ANY;
+    }
+  }
+
+  result = bind(_lsd, paddress, addrsz);
   if(result != 0) {
-    log( ERROR, "tcp_server: bind failed: %d", result );
+    log( ERROR, "tcp_server: bind failed: %s", strerror(errno) );
     return false;
   }
 
   result = listen(_lsd, 5);
   if(result != 0) {
-    log( ERROR, "tcp_server: listen failed: %d", result );
+    log( ERROR, "tcp_server: listen failed: %s", strerror(errno) );
     return false;
+  }
+
+  if( _is_unix ) {
+    if( chmod( _address.c_str(), (mode_t)_port ) != 0 ){
+      log( ERROR, "tcp_server: chmod( %s, %u ) failed: %s", _address.c_str(), _port, strerror(errno) );
+      return false;
+    }
   }
 
   _listening = true;
@@ -96,7 +139,7 @@ tcp_stream *tcp_server::accept() {
   memset(&address, 0, sizeof(address));
   int sd = ::accept(_lsd, (struct sockaddr*)&address, &len);
   if (sd < 0) {
-    log( ERROR, "tcp_server::accept failed: %d", sd );
+    log( ERROR, "tcp_server::accept failed: %s", strerror(errno) );
     return NULL;
   }
   return new tcp_stream(sd, &address);

@@ -28,8 +28,10 @@ class tcp_server
 
     int    _lsd;
     int    _port;
+    int    _domain;
     string _address;
     bool   _listening;
+    bool   _is_unix;
 
     tcp_server() {}
 

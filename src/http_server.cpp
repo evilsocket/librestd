@@ -121,11 +121,12 @@ void http_server::route( string path, http_controller *controller, http_controll
 
 void http_server::start() {
   log( INFO, "Starting http_server ..." );
-  for( auto i = _consumers.begin(), e = _consumers.end(); i != e; ++i ){
-    (*i)->start();
-  }
 
   if( _server->start() == true ){
+    for( auto i = _consumers.begin(), e = _consumers.end(); i != e; ++i ){
+      (*i)->start();
+    }
+
     log( INFO, "Server listening on %s:%d with %lu workers ...", _address.c_str(), _port, _threads );
     while(1) {
       tcp_stream *client = _server->accept();
