@@ -62,8 +62,12 @@ bool tcp_server::start() {
     address.sin_addr.s_addr = INADDR_ANY;
   }
 
+  // Make sure connection-intensive things will be able to close/open sockets a zillion of times.
   int optval = 1;
-  setsockopt(_lsd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval); 
+  if( setsockopt(_lsd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) == -1 ) {
+    log( ERROR, "tcp_server: setsockopt( SO_REUSEADDR setsockopt( SO_REUSEADDR )iled: %d", errno );
+    return false;
+  }
 
   result = bind(_lsd, (struct sockaddr*)&address, sizeof(address));
   if(result != 0) {
