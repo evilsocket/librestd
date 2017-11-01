@@ -26,6 +26,9 @@ using std::string;
 
 namespace restd {
 
+#define TCP_ERROR        -1
+#define TCP_READ_TIMEOUT -2
+
 class tcp_stream
 {
   protected:

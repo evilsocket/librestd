@@ -51,10 +51,10 @@ void http_consumer::consume( tcp_stream *client ) {
   for( left = http_request::max_size; left > 0; ) {
     read = client->receive( pbuffer, left, http_request::read_timeout );
     if( read <= 0 ) {
-      if( read == -1 ) {
+      if( read == TCP_ERROR ) {
         log( ERROR, "Failed to read request from client: %s", strerror(errno) );
       }
-      else if( read == -2 ) {
+      else if( read == TCP_READ_TIMEOUT ) {
         log( ERROR, "Failed to read request from client: read time out." );
       }
       else {
