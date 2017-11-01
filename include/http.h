@@ -32,6 +32,9 @@ namespace restd {
 
 using json = nlohmann::json;
 
+#define HTTP_END_OF_HEADERS    "\r\n\r\n"
+#define HTTP_END_OF_HEADERS_SZ 4
+
 typedef std::map<std::string, std::string> headers_t;
 typedef std::map<std::string, std::string> params_t;
 typedef std::map<std::string, std::string> cookies_t;
@@ -67,6 +70,7 @@ class http_request
   public:
 
     static const unsigned int max_size = 8192;
+    static const unsigned int read_timeout = 1;
 
     std::string    raw;
 

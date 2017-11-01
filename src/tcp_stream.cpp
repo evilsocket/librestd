@@ -50,7 +50,7 @@ ssize_t tcp_stream::receive(unsigned char* buffer, size_t len, int timeout) {
     return read(_sd, buffer, len);
   }
 
-  return -1;
+  return -2;
 }
 
 string tcp_stream::peer_address() {

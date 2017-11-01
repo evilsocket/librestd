@@ -38,24 +38,57 @@ void http_consumer::route( http_request& request, http_response& response ) {
 }
 
 void http_consumer::consume( tcp_stream *client ) {
-  unsigned char req_buffer[ http_request::max_size ] = {0};
+  unsigned char req_buffer[ http_request::max_size ] = {0},
+               *pbuffer = &req_buffer[0];
+  int           read = 0,
+                left = 0;
   string        res_buffer;
   http_request  request;
   http_response response;
   
   log( DEBUG, "New client connection from %s:%d", client->peer_address().c_str(), client->peer_port() );
 
-  int read = client->receive( req_buffer, http_request::max_size );
-  if( read <= 0 ){
-    log( ERROR, "Failed to read request from client: %d", read );
-    return;
+  for( left = http_request::max_size; left > 0; ) {
+    read = client->receive( pbuffer, left, http_request::read_timeout );
+    if( read <= 0 ) {
+      if( read == -1 ) {
+        log( ERROR, "Failed to read request from client: %s", strerror(errno) );
+      }
+      else if( read == -2 ) {
+        log( ERROR, "Failed to read request from client: read time out." );
+      }
+      else {
+        log( ERROR, "Failed to read request from client: %d.", read );
+      }
+      return;
+    }
+
+    log( DEBUG, "  Read %d bytes of request from client.", read );
+
+    left    -= read;
+    pbuffer += read;
+
+    /*
+     * FIXME:
+     *
+     * If the whole request is sent unbuffered this exit condition
+     * might cause the read loop to break before we're done reading
+     * the request body. In order to fix the 'Content-Length' header
+     * should be compared to the actual amount of bytes read and 
+     * further read loops should be executed if something is missing.
+     */
+    if( strstr( (char *)req_buffer, HTTP_END_OF_HEADERS ) != NULL ) {
+      break;
+    }
   }
 
-  log( DEBUG, "Read %d bytes of request from client.", read );
-  
+  size_t req_size = http_request::max_size - left;
+
+  log( DEBUG, "Read loop completed, total request size is %lu bytes ( left %d bytes ).", req_size, left );
+
   // std::regex_error might be thrown
   try {
-    if( http_request::parse( request, req_buffer, read ) == false ){
+    if( http_request::parse( request, req_buffer, req_size ) == false ){
       log( ERROR, "Could not parse request: %s", req_buffer );
       response.bad_request();
       goto done;

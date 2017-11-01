@@ -25,8 +25,6 @@
 namespace restd {
 
 #define HTTP_SERVER_SOFTWARE   "librestd/1.0"
-#define HTTP_END_OF_HEADERS    "\r\n\r\n"
-#define HTTP_END_OF_HEADERS_SZ 4
 
 // METHOD /URI HTTP/VERSION
 static const std::regex kFirstLineParser("([^\\s]+)\\s+([^\\s]+)\\s+HTTP.([\\d\\.]+)");  
@@ -36,6 +34,7 @@ static const std::regex kPathQueryParser( "(/[^?]*)\\?(.+)" );
 static const std::regex kHeaderParser("([^\\s]+)\\s*:\\s*(.+)");  
 
 const unsigned int http_request::max_size;
+const unsigned int http_request::read_timeout;
 
 bool http_request::parseMethodAndUri( http_request& req, strings::line_iterator& iter ) {
   char *line = iter.next();
