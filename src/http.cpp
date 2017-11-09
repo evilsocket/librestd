@@ -27,150 +27,22 @@ namespace restd {
 #define HTTP_SERVER_SOFTWARE   "librestd/1.0"
 
 // METHOD /URI HTTP/VERSION
-static const std::regex kFirstLineParser("([^\\s]+)\\s+([^\\s]+)\\s+HTTP.([\\d\\.]+)");  
+static const std::regex kFirstLineParser("([^\\s]+)\\s+([^\\s]+)\\s+HTTP.([\\d\\.]+)\r\n");  
 // /PATH?QUERY
 static const std::regex kPathQueryParser( "(/[^?]*)\\?(.+)" );
 // KEY: VALUE
-static const std::regex kHeaderParser("([^\\s]+)\\s*:\\s*(.+)");  
+static const std::regex kHeaderParser("([^\\s]+)\\s*:\\s*(.+)\r\n");  
 
-const unsigned int http_request::max_size;
+const unsigned int http_request::chunk_size;
 const unsigned int http_request::read_timeout;
 
-bool http_request::parseMethodAndUri( http_request& req, strings::line_iterator& iter ) {
-  char *line = iter.next();
-  if( line == NULL ){
-    log( ERROR, "Could not get first line from request." );
-    return false;
-  }
+http_request::http_request() : parser_state(PARSE_BEGIN), content_length(0) {
 
-  string s(line);
-  std::smatch m;
-  if( std::regex_search( s, m, kFirstLineParser ) == false || m.size() != 4 ) {
-    log( ERROR, "Error while parsing first line from request: '%s'.", line );
-    return false;
-  }
-
-  string method = m[1].str();
-  if( method == "GET" ){ 
-    req.method = GET; 
-  }
-  else if( method == "POST" ) {
-    req.method = POST;
-  }
-  else if( method == "PATCH" ) {
-    req.method = PATCH;
-  }
-  else if( method == "PUT" ) {
-    req.method = PUT;
-  }
-  else if( method == "CONNECT" ) {
-    req.method = CONNECT;
-  }
-  else {
-    log( ERROR, "Invalid HTTP method '%s'", method.c_str() );
-    return false;
-  }
-
-  req.uri     = m[2].str();
-  req.version = m[3].str();
-
-  log( DEBUG, "  req.method  = %s", method.c_str() );
-  log( DEBUG, "  req.uri     = %s", req.uri.c_str() );
-
-  s = req.uri;
-  if( std::regex_search( s, m, kPathQueryParser ) != false && m.size() == 3 ) {
-    req.path = m[1].str();
-    string params = m[2].str();
-    if( parseUrlencodedFormParameters( req, params ) == false ){
-      return false;
-    }
-  }
-  else {
-    req.path = req.uri;
-  }
-
-  log( DEBUG, "  req.path    = %s", req.path.c_str() );
-  log( DEBUG, "  req.version = %s", req.version.c_str() );
-
-  return true;
 }
 
-bool http_request::parseHeaders( http_request& req, strings::line_iterator& iter ) {
-  for( char *line = iter.next(); line && strlen(line); line = iter.next() ){
-    string s(line);
-    std::smatch m;
-    if( std::regex_search( s, m, kHeaderParser ) == false || m.size() != 3 ) {
-      log( ERROR, "Error while parsing header from request: '%s'.", line );
-      return false;
-    }
-
-    string name  = m[1].str(),
-           value = m[2].str();
-
-    log( DEBUG, "  req.headers[%s] = '%s'", name.c_str(), value.c_str() );
-
-    req.headers[name] = value;
-
-    if( name == "Host" ){
-      req.host = value;
-      log( DEBUG, "    req.host = '%s'", value.c_str() );
-    }
-    else if( name == "Cookie" ) {
-      if( parseCookies( req, value ) == false ) {
-        // Maybe just log the error and continue?
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-bool http_request::parseBody( http_request& req, strings::line_iterator& iter, const unsigned char *buffer, size_t size ) {
-  char *body = iter.next();
-  if( body != NULL ){
-    size_t body_size = size - ( body - (char *)buffer );
-    log( DEBUG, "  req.body = (%lu bytes)", body_size );
-    req.body = string( body, body_size );
-
-    if( req.has_header("Content-Type") ) {
-      string content_type = req.headers["Content-Type"];
-
-      if( content_type == "application/x-www-form-urlencoded" ){
-        return parseUrlencodedFormParameters( req, req.body );  
-      } 
-      else if( content_type == "application/json" ){
-        return parseJson( req, req.body );
-      }
-      else {
-        log( DEBUG, "Unhandled content type '%s'.", content_type.c_str() );
-      }
-    }
-  }
-
-  return true;
-}
-
-bool http_request::parseUrlencodedFormParameters( http_request& req, const string& s ) {
-  params_iterator params( s.c_str() ); 
-
-  for( char *param = params.next(); param; param = params.next() ){
-    keyval_iterator kv( param );
-    char *key = kv.next(),
-         *val = kv.next();
-
-    if( key && strlen(key) ){
-      req.parameters[ string(key) ] = val ? strings::urldecode(val) : string();
-      log( DEBUG, "    req.params[%s] = '%s'", key, req.parameters[key].c_str() );
-    }
-  }
-
-  return true;
-}
-
-bool http_request::parseJson( http_request& req, const string& s ) {
+bool http_request::parse_json( const string& s ) {
   try {
-    req.json = json::parse( req.body );
+    this->json = json::parse( s );
     return true;
   }
   catch( const std::invalid_argument& e ) {
@@ -179,7 +51,110 @@ bool http_request::parseJson( http_request& req, const string& s ) {
   }
 }
 
-bool http_request::parseCookies( http_request& req, const string& s ) {
+bool http_request::parse_query( const string& s ) {
+  params_iterator params( s.c_str() ); 
+
+  for( char *param = params.next(); param; param = params.next() ){
+    keyval_iterator kv( param );
+    char *key = kv.next(),
+         *val = kv.next();
+
+    if( key && strlen(key) ){
+      this->parameters[ string(key) ] = val ? strings::urldecode(val) : string();
+      log( DEBUG, "    req.params[%s] = '%s'", key, this->parameters[key].c_str() );
+    }
+  }
+
+  return true;
+}
+
+bool http_request::parse_method_and_path(const unsigned char *line, size_t size) {
+  string s( (const char *)line );
+  std::smatch m;
+  if( std::regex_search( s, m, kFirstLineParser ) == false || m.size() != 4 ) {
+    log( ERROR, "Error while parsing first line from request: '%s'.", line );
+    return false;
+  }
+
+  string method = m[1].str();
+  if( method == "GET" ){ 
+    this->method = GET; 
+  }
+  else if( method == "POST" ) {
+    this->method = POST;
+  }
+  else if( method == "PATCH" ) {
+    this->method = PATCH;
+  }
+  else if( method == "PUT" ) {
+    this->method = PUT;
+  }
+  else if( method == "CONNECT" ) {
+    this->method = CONNECT;
+  }
+  else {
+    log( ERROR, "Invalid HTTP method '%s'", method.c_str() );
+    return false;
+  }
+
+  this->uri     = m[2].str();
+  this->version = m[3].str();
+
+  log( DEBUG, "  req.method  = %s", method.c_str() );
+  log( DEBUG, "  req.uri     = %s", this->uri.c_str() );
+
+  s = this->uri;
+  if( std::regex_search( s, m, kPathQueryParser ) != false && m.size() == 3 ) {
+    this->path = m[1].str();
+    string params = m[2].str();
+    if( parse_query( params ) == false ){
+      return false;
+    }
+  }
+  else {
+    this->path = this->uri;
+  }
+
+  log( DEBUG, "  req.path    = %s", this->path.c_str() );
+  log( DEBUG, "  req.version = %s", this->version.c_str() );
+
+  return true;
+}
+
+bool http_request::parse_header(const unsigned char *line, size_t size) {
+  string s((const char *)line);
+  std::smatch m;
+  if( std::regex_search( s, m, kHeaderParser ) == false || m.size() != 3 ) {
+    log( ERROR, "Error while parsing header from request: '%s'.", line );
+    return false;
+  }
+
+  string name  = m[1].str(),
+         value = m[2].str();
+
+  log( DEBUG, "  req.headers[%s] = '%s'", name.c_str(), value.c_str() );
+
+  this->headers[name] = value;
+
+  if( name == "Host" ){
+    this->host = value;
+    log( DEBUG, "    req.host = '%s'", value.c_str() );
+  }
+  else if( name == "Content-Length" ) {
+    this->content_length = atoi( value.c_str() );
+    log( DEBUG, "    req.content_length = %d", this->content_length );
+  }
+  else if( name == "Cookie" ) {
+    if( parse_cookies( value ) == false ) {
+      // Maybe just log the error and continue?
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool http_request::parse_cookies( const string& s ) {
   cookies_iterator c( s.c_str() ); 
 
   for( char *cookie = c.next(); cookie; cookie = c.next() ){
@@ -194,27 +169,80 @@ bool http_request::parseCookies( http_request& req, const string& s ) {
       strings::trim(sval);
       strings::trim(skey);
 
-      req.cookies[skey] = strings::urldecode(sval.c_str());
-      log( DEBUG, "    req.cookies[%s] = '%s'", skey.c_str(), req.cookies[skey].c_str() );
+      this->cookies[skey] = strings::urldecode(sval.c_str());
+      log( DEBUG, "    req.cookies[%s] = '%s'", skey.c_str(), this->cookies[skey].c_str() );
     }
   }
 
   return true;
 }
 
-bool http_request::parse( http_request& req, const unsigned char *buffer, size_t size ) {
-  strings::line_iterator iter( (const char *)buffer );  
+bool http_request::parse_line( const unsigned char *line, size_t size ) {
+  this->raw += (const char *)line;
 
-  req.raw = string( (const char *)buffer, size );
+  switch( parser_state ) {
+    // parse method, path and version
+    case PARSE_BEGIN:
 
-  if( parseMethodAndUri( req, iter ) == false ){
-    return false;
+      if( parse_method_and_path( line, size ) == true ) {
+        log( DEBUG, "PARSE_BEGIN -> PARSE_HEADERS" );
+        parser_state = PARSE_HEADERS;
+        return true;
+      } else {
+        log( DEBUG, "PARSE_BEGIN -> PARSE_DONE" );
+        parser_state = PARSE_DONE;
+        return false;
+      }
+
+    break;
+
+    // parse headers
+    case PARSE_HEADERS:
+
+      if( strcmp( (char *)line, "\r\n" ) == 0 ) {
+        log( DEBUG, "Found end of HTTP headers (conlen=%d needs_body=%s).", content_length, needs_body() ? "yes" : "no" );
+        log( DEBUG, "PARSE_HEADERS -> PARSE_DONE" );
+        parser_state = PARSE_DONE;
+        return true;
+      }
+      
+      if( parse_header( line, size ) == true ) {
+        log( DEBUG, "PARSE_HEADERS -> ..." );
+        return true;
+      } 
+      else {
+        log( DEBUG, "PARSE_HEADERS -> PARSE_DONE" );
+        parser_state = PARSE_DONE;
+        return false;
+      }
+
+    break;
+
+    // this should never happen
+    case PARSE_DONE:
+      log( ERROR, "[BUG] http_request::parse_line called after parser state was set to DONE." ); 
+    break;
   }
-  else if( parseHeaders( req, iter ) == false ){
-    return false;
-  }
-  else if( parseBody( req, iter, buffer, size ) == false ){
-    return false;
+
+  log( ERROR, "Unhandled http_request for parser state %d: %s", parser_state, line );
+  return false;
+}
+
+bool http_request::parse_body() {
+  log( DEBUG, "Parsing %lu bytes of request body.", this->body.size() );
+
+  if( has_header("Content-Type") ) {
+    string content_type = headers["Content-Type"];
+
+    if( content_type == "application/x-www-form-urlencoded" ){
+      return parse_query( this->body );  
+    } 
+    else if( content_type == "application/json" ){
+      return parse_json( this->body );
+    }
+    else {
+      log( DEBUG, "Unhandled content type '%s'.", content_type.c_str() );
+    }
   }
 
   return true;

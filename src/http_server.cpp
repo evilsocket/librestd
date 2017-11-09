@@ -38,68 +38,83 @@ void http_consumer::route( http_request& request, http_response& response ) {
 }
 
 void http_consumer::consume( tcp_stream *client ) {
-  unsigned char req_buffer[ http_request::max_size ] = {0},
-               *pbuffer = &req_buffer[0];
+  unsigned char chunk[ http_request::chunk_size ] = {0};
   int           read = 0,
-                left = 0;
-  string        res_buffer;
+                left = 0,
+                toread = 0;
+  char          line[0xff] = {0};
   http_request  request;
   http_response response;
+  string        res_buffer;
   
   log( DEBUG, "New client connection from %s:%d", client->peer_address().c_str(), client->peer_port() );
 
-  for( left = http_request::max_size; left > 0; ) {
-    read = client->receive( pbuffer, left, http_request::read_timeout );
-    if( read <= 0 ) {
-      if( read == TCP_ERROR ) {
-        log( ERROR, "Failed to read request from client: %s", strerror(errno) );
-      }
-      else if( read == TCP_READ_TIMEOUT ) {
-        log( ERROR, "Failed to read request from client: read time out." );
-      }
-      else {
-        log( ERROR, "Failed to read request from client: %d.", read );
-      }
+#define LOG_FAILED_READ(r) \
+    if( r == TCP_ERROR ) { \
+      log( ERROR, "Failed to read request from client: %s", strerror(errno) ); \
+    } \
+    else if( r == TCP_READ_TIMEOUT ) { \
+      log( ERROR, "Failed to read request from client: read time out." ); \
+    } \
+    else { \
+      log( ERROR, "Failed to read request from client: %d.", r ); \
+    }
+
+  // Read request line by line until the end of headers.
+  while( request.parser_state != PARSE_DONE ) {
+    int r = client->read_line( line, 0xff, http_request::read_timeout );
+    if( r <= 0 ) {
+      LOG_FAILED_READ(r)
       return;
     }
 
-    log( DEBUG, "  Read %d bytes of request from client.", read );
+    try {
+      if( request.parse_line( (const unsigned char *)line, strlen(line) ) == false ) {
+        response.bad_request();
+        goto done;
+      }
+    }
+    catch( const std::regex_error& e ){
+      log( ERROR, "Exception (%d) while parsing request: %s", e.code(), e.what() );
+      response.bad_request();
+      goto done;
+    }
 
-    left    -= read;
-    pbuffer += read;
-
-    /*
-     * FIXME:
-     *
-     * If the whole request is sent unbuffered this exit condition
-     * might cause the read loop to break before we're done reading
-     * the request body. In order to fix the 'Content-Length' header
-     * should be compared to the actual amount of bytes read and 
-     * further read loops should be executed if something is missing.
-     */
-    if( strstr( (char *)req_buffer, HTTP_END_OF_HEADERS ) != NULL ) {
+    if( request.parser_state == PARSE_DONE ) {
       break;
     }
   }
 
-  size_t req_size = http_request::max_size - left;
+  // If a content-length was set, read the body.
+  if( request.needs_body() == true ) {
+    log( DEBUG, "Reading %d bytes of request body (in %d bytes chunks).", request.content_length, http_request::chunk_size );
 
-  log( DEBUG, "Read loop completed, total request size is %lu bytes ( left %d bytes ).", req_size, left );
+    request.body.reserve( request.content_length );
 
-  // std::regex_error might be thrown
-  try {
-    if( http_request::parse( request, req_buffer, req_size ) == false ){
-      log( ERROR, "Could not parse request: %s", req_buffer );
+    for( left = request.content_length; left > 0; ) {
+      toread = left < http_request::chunk_size ? left : http_request::chunk_size;
+
+      log( DEBUG, "  Reading chunk of %d bytes.", toread );
+
+      read = client->receive( chunk, toread, http_request::read_timeout );
+      if( read <= 0 ) {
+        LOG_FAILED_READ(read)
+        return;
+      }
+
+      left -= read;
+
+      log( DEBUG, "    Read %d/%d bytes of request from client.", request.content_length - left, request.content_length );
+
+      request.body += string( (char *)chunk, read );
+    }
+
+    if( request.parse_body() == false ) {
       response.bad_request();
       goto done;
     }
   }
-  catch( const std::regex_error& e ){
-    log( ERROR, "Exception (%d) while parsing request: %s", e.code(), e.what() );
-    response.bad_request();
-    goto done;
-  }
- 
+
   route( request, response );
 
 done:

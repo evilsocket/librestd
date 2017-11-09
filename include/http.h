@@ -50,6 +50,13 @@ typedef enum {
 }
 Method;
 
+typedef enum {
+  PARSE_BEGIN = 0,
+  PARSE_HEADERS = 1,
+  PARSE_DONE = 2
+}
+RequestParserState;
+
 typedef strings::char_iterator<'&'> params_iterator;
 typedef strings::char_iterator<';'> cookies_iterator;
 typedef strings::char_iterator<'='> keyval_iterator;
@@ -58,20 +65,18 @@ class http_request
 {
   private:
 
-    static bool parseMethodAndUri( http_request& req, strings::line_iterator& iter );
-    static bool parseHeaders( http_request& req, strings::line_iterator& iter );
-    static bool parseBody( http_request& req, strings::line_iterator& iter, const unsigned char *buffer, size_t size );
-    static bool parseCookies( http_request& req, const string& s );
-
-    // Body parsers.
-    static bool parseUrlencodedFormParameters( http_request& req, const string& s );
-    static bool parseJson( http_request& req, const string& s );
+    bool parse_method_and_path(const unsigned char *line, size_t size);
+    bool parse_query( const string& s );
+    bool parse_json( const string& s );
+    bool parse_header(const unsigned char *line, size_t size);
+    bool parse_cookies( const string& s );
 
   public:
 
-    static const unsigned int max_size = 8192;
+    static const unsigned int chunk_size = 8192;
     static const unsigned int read_timeout = 1;
 
+    RequestParserState parser_state;
     std::string    raw;
 
     Method         method;
@@ -82,8 +87,14 @@ class http_request
     headers_t      headers;
     params_t       parameters;
     cookies_t      cookies;
+    int            content_length;
     std::string    body;
     nlohmann::json json;
+
+    http_request();
+
+    bool parse_line( const unsigned char *line, size_t size );
+    bool parse_body();
 
     inline string method_name() const {
       switch(method) {
@@ -94,6 +105,14 @@ class http_request
         case CONNECT: return "CONNECT";
       }
       return "???";
+    }
+
+    inline bool has_body() const {
+      return body != "";
+    }
+
+    inline bool needs_body() const {
+      return ( content_length > 0 );
     }
 
     inline bool has_header( const char *name ) const {
@@ -123,7 +142,6 @@ class http_request
       return string(deflt);
     }
 
-    static bool parse( http_request& req, const unsigned char *buffer, size_t size );
 };
 
 class http_response 

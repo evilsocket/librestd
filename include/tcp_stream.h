@@ -48,6 +48,7 @@ class tcp_stream
 
     ssize_t send(const unsigned char* buffer, size_t len);
     ssize_t receive(unsigned char* buffer, size_t len, int timeout=0);
+    ssize_t read_line(char *buffer, size_t len, int timeout);
 
     string peer_address();
     int    peer_port();
