@@ -108,7 +108,7 @@ class http_request
     }
 
     inline bool has_body() const {
-      return body != "";
+      return !body.empty();
     }
 
     inline bool needs_body() const {
