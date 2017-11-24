@@ -42,7 +42,7 @@ void http_consumer::consume( tcp_stream *client ) {
   int           read = 0,
                 left = 0,
                 toread = 0;
-  char          line[0xff] = {0};
+  string        line;
   http_request  request;
   http_response response;
   string        res_buffer;
@@ -62,14 +62,14 @@ void http_consumer::consume( tcp_stream *client ) {
 
   // Read request line by line until the end of headers.
   while( request.parser_state != PARSE_DONE ) {
-    int r = client->read_until( (unsigned char)'\n', (unsigned char *)line, 0xff, http_request::read_timeout );
+    int r = client->read_until( (unsigned char)'\n', line, http_request::read_timeout );
     if( r <= 0 ) {
       LOG_FAILED_READ(r)
       return;
     }
 
     try {
-      if( request.parse_line( (const unsigned char *)line, strlen(line) ) == false ) {
+      if( request.parse_line( (const unsigned char *)line.c_str(), line.length() ) == false ) {
         response.bad_request();
         goto done;
       }
