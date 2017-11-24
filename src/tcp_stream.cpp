@@ -53,24 +53,19 @@ ssize_t tcp_stream::receive(unsigned char* buffer, size_t len, int timeout) {
   return TCP_READ_TIMEOUT;
 }
 
-ssize_t tcp_stream::read_until(unsigned char until, unsigned char *buffer, size_t len, int timeout) {
-  size_t wrote, tot;
+ssize_t tcp_stream::read_until(unsigned char until, string& line, int timeout) {
+  size_t max = 0xFFFF, wrote;
   unsigned char byte = 0;
 
-  // if i include strings.h here, bad things happen, so fuck memset
-  //
-  // memset( buffer, 0x00, len );
-  for( unsigned char *p = buffer; p != buffer + len; ++p ) {
-    *p = 0x00;
-  }
+  line.clear();
 
-  for( wrote = 0, tot = len; len > 0 && wrote < tot && byte != until; --len, wrote++ ) {
+  for( wrote = 0; wrote < max && byte != until; ++wrote ) {
     int r = receive( &byte, 1, timeout );
     if( r != 1 ) {
       return r;
     }
 
-    buffer[wrote] = byte;
+    line += byte;
   }
 
   return wrote;
