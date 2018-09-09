@@ -56,6 +56,7 @@ void log( log_level_t level, const char *format, ... ) {
   va_list ap;
   time_t 		rawtime  = 0;
   struct tm * timeinfo = NULL;
+  char nl = '\n';
 
   if( level >= __level ) {
     std::unique_lock<std::mutex> lock(__mutex);
@@ -77,7 +78,10 @@ void log( log_level_t level, const char *format, ... ) {
       case CRITICAL : slevel = "CRT"; break;
     }
 
-    fprintf( __fp, "[%s] [%s] %s\n", timestamp, slevel.c_str(), buffer );
+    if( string(buffer).find('\n') != string::npos )
+      nl = 0x00;
+
+    fprintf( __fp, "[%s] [%s] %s%c", timestamp, slevel.c_str(), buffer, nl );
   }
 }
 
