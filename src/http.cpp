@@ -296,20 +296,20 @@ void http_response::not_found() {
   headers["Content-Type"] = "text/plain; charset=utf-8";
 }
 
-void http_response::text( string text, http_response::Status status /* = http_response::HTTP_STATUS_OK */ ) {
-  status = status;
+void http_response::text( string text, http_response::Status sts /* = http_response::HTTP_STATUS_OK */ ) {
+  status = sts;
   body   = text;
   headers["Content-Type"] = "text/plain";
 }
 
-void http_response::html( string html, http_response::Status status /* = http_response::HTTP_STATUS_OK */ ) {
-  status = status;
+void http_response::html( string html, http_response::Status sts /* = http_response::HTTP_STATUS_OK */ ) {
+  status = sts;
   body   = html;
   headers["Content-Type"] = "text/html; charset=utf-8";
 }
 
-void http_response::json( string json, http_response::Status status /* = http_response::HTTP_STATUS_OK */ ) {
-  status = status;
+void http_response::json( string json, http_response::Status sts /* = http_response::HTTP_STATUS_OK */ ) {
+  status = sts;
   body   = json;
   headers["Content-Type"] = "application/json";
 }
